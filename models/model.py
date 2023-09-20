@@ -340,7 +340,7 @@ class HOIDetector(nn.Module):
                 output_dim=embed_dim
             )
         self.vision_proj = nn.Sequential(OrderedDict([
-            ("vision_proj_fc1", nn.Linear(embed_dim, vision_width)),
+            ("vision_proj_fc1", nn.Linear(vision_width, vision_width)),
             ("vision_proj_gelu1", QuickGELU()),
             ("vision_proj_dropout1", nn.Dropout(0.2)),
             ("vision_proj_fc2", nn.Linear(vision_width, vision_width)),
