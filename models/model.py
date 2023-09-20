@@ -339,7 +339,13 @@ class HOIDetector(nn.Module):
                 heads=vision_heads,
                 output_dim=embed_dim
             )
-        self.vision_mlp = nn.Parameter((vision_width ** -0.5) * torch.randn(vision_width, vision_width))
+        self.vision_proj = nn.Sequential(OrderedDict([
+            ("vision_proj_fc1", nn.Linear(embed_dim, vision_width)),
+            ("vision_proj_gelu1", QuickGELU()),
+            ("vision_proj_dropout1", nn.Dropout(0.2)),
+            ("vision_proj_fc2", nn.Linear(vision_width, vision_width))
+            ("vision_proj_dropout2", nn.Dropout(0.2)),
+        ]))
 
         self.hoi_visual_decoder = HOIVisionTransformer(
             image_resolution=image_resolution,
@@ -500,7 +506,7 @@ class HOIDetector(nn.Module):
             raise NotImplementedError("undefined decoder_mask")
         # vision encoder
         feature_maps = self.encode_image(resized_img)
-        feature_maps = feature_maps @ self.vision_mlp  # torch.Size([8, 196, 768])
+        feature_maps = self.vision_proj(feature_maps)  # torch.Size([8, 196, 768])
         # vision decoder
         vision_outputs = self.hoi_visual_decoder(image=feature_maps, mask=decoder_mask, prompt_hint=prompt_hint)
         # text encoder
