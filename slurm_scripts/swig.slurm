@@ -33,12 +33,12 @@ conda activate thid
 ## Training
 python -m torch.distributed.launch --nproc_per_node=2 --use_env --master_port 19934 main.py \
     --batch_size 64 \
-    --output_dir checkpoints/swig_bs2x64_lr1e-4_token20_prompt_hint_declayer8 \
+    --output_dir checkpoints/swig_bs2x64_lr1e-4_token20_prompt_hint_declayer12 \
     --epochs 100 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 20 \
     --enable_dec \
-    --dataset_file swig --use_prompt_hint true --vision_decoder_layers 8
+    --dataset_file swig --use_prompt_hint true --vision_decoder_layers 12
 
 ## Inference
 # export MASTER_ADDR=localhost
