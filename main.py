@@ -52,14 +52,14 @@ def main(args):
         update_modules, update_params = [], []
         frozen_modules, frozen_params = [], []
         for n, p in model.named_parameters():
-            if 'hoi' in n or 'bbox' in n or 'promp_proj' in n:
+            if 'hoi' in n or 'bbox' in n or 'promp_proj' in n or "vision_proj" in n or 'gate_weight' in n:
                 update_modules.append(n)
                 update_params.append(p)
             else:
                 frozen_modules.append(n)
                 frozen_params.append(p)
                 p.requires_grad = False
-
+        
         optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()),
                                       lr=args.lr, weight_decay=args.weight_decay)
         return optimizer

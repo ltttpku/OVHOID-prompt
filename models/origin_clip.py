@@ -73,8 +73,14 @@ class VisionTransformer(nn.Module):
         self.ln_post = LayerNorm(width)
         # self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
         self.proj = None
+        self.hoi_mlp = nn.Sequential(OrderedDict([
+            ("fc1", nn.Linear(width, width*2)),
+            ("gelu", QuickGELU()),
+            ("fc2", nn.Linear(width*2, width))
+        ]))
+        self.hoi_ln = LayerNorm(width)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, multi_scale : bool = False):
         x = self.conv1(x)  # shape = [*, width, grid, grid]
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
@@ -83,6 +89,16 @@ class VisionTransformer(nn.Module):
         x = self.ln_pre(x)
 
         x = x.permute(1, 0, 2)  # NLD -> LND
+
+        if multi_scale:
+            feature_maps = []
+            for ResidualAttentionBlock in self.transformer.resblocks:
+                x = ResidualAttentionBlock(x)
+                tmp_x = x.clone().permute(1, 0, 2)[:, 1:, :]
+                tmp_x = tmp_x + self.hoi_mlp(self.hoi_ln(tmp_x))
+                feature_maps.append(tmp_x)
+            return feature_maps[2:-1:3] ## TODO
+        
         x = self.transformer(x)
         x = x.permute(1, 0, 2)  # LND -> NLD
 

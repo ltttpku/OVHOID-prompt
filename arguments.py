@@ -37,6 +37,8 @@ def get_args_parser():
                         help="number of layers in vision transformer")
     parser.add_argument('--vision_decoder_heads', default=8, type=int,
                         help="number of layers in vision transformer")
+    parser.add_argument('--multi_scale', default=False, type=lambda x: (str(x).lower() == 'true'),
+                        help='whether to use prompt hint in the text encoder')
     
     # * Text
     parser.add_argument('--context_length', default=77, type=int,

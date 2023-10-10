@@ -31,14 +31,15 @@ conda activate thid
 
 
 ## Training
-python -m torch.distributed.launch --nproc_per_node=2 --use_env --master_port 19934 main.py \
+python -m torch.distributed.launch --nproc_per_node=2 --master_port 1222 --use_env main.py \
     --batch_size 64 \
-    --output_dir checkpoints/swig_bs2x64_lr1e-4_token20_prompt_hint_declayer12 \
-    --epochs 100 \
+    --output_dir checkpoints/swig_bs2x64_lr1e-4_token5_ms \
+    --epochs 150 \
     --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 20 \
+    --hoi_token_length 5 \
     --enable_dec \
-    --dataset_file swig --use_prompt_hint true --vision_decoder_layers 12
+    --dataset_file swig --multi_scale true
+
 
 ## Inference
 # export MASTER_ADDR=localhost
@@ -47,29 +48,9 @@ python -m torch.distributed.launch --nproc_per_node=2 --use_env --master_port 19
 # python main.py --eval \
 #     --batch_size 8 \
 #     --output_dir outputs/ \
-#     --hoi_token_length 10 \
+#     --hoi_token_length 20 \
 #     --enable_dec \
-#     --pretrained checkpoints/swig_bs8x2_lr1e-4_token10/checkpoint0089.pth \
-#     --eval_size 256 \
-#     --test_score_thresh 1e-4 \
-#     --dataset_file swig
-
-# python main.py --eval \
-#     --batch_size 8 \
-#     --output_dir outputs/ \
-#     --hoi_token_length 10 \
-#     --enable_dec \
-#     --pretrained checkpoints/swig_bs8x2_lr1e-4_token10/checkpoint0079.pth \
-#     --eval_size 256 \
-#     --test_score_thresh 1e-4 \
-#     --dataset_file swig
-
-# python main.py --eval \
-#     --batch_size 8 \
-#     --output_dir outputs/ \
-#     --hoi_token_length 10 \
-#     --enable_dec \
-#     --pretrained checkpoints/swig_bs8x2_lr1e-4_token10/checkpoint0069.pth \
+#     --pretrained checkpoints/swig_bs2x64_lr1e-4_token20_prompt_hint_declayer12/checkpoint0090.pth \
 #     --eval_size 256 \
 #     --test_score_thresh 1e-4 \
 #     --dataset_file swig

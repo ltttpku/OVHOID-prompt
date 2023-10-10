@@ -6,7 +6,7 @@ Train and eval functions used in main.py
 import math
 import sys
 from typing import Iterable
-import torch
+import torch, torchvision
 import utils.misc as utils
 from models.model import convert_weights
 from datasets import build_evaluator
@@ -80,16 +80,45 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     # Build evaluator
     evaluator = build_evaluator(args)
 
-    # Convert all interaction categories into embeddings
-    text_features = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device)
-    pure_words_features = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device, pure_words=True)
+    # Convert all interaction categories into embeddings, only forward pass once!!
+    text_tokens = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device)
+    text_features = model.encode_text(text_tokens, pure_words=False)
+    text_features /= text_features.norm(dim=-1, keepdim=True)
+    if args.use_prompt_hint:
+        prompt_hint = model.encode_text(text_tokens, pure_words=True)
+        prompt_hint = model.promp_proj(prompt_hint)
+    else:
+        prompt_hint = torch.zeros(0, 768).to(device).half()
+    
     # Inference
     for images, targets in metric_logger.log_every(data_loader, 10, header):
         images = images.to(device)
         targets = [{k: v.to(device) if k != "hois" else v for k, v in t.items()} for t in targets]
         
-        prompt_hint = pure_words_features
-        vision_outputs = model.encode_image(images.tensors, images.mask, prompt_hint)
+        bs, c, h, w = images.tensors.shape
+        img_sizes = torch.stack([targets[z]['size'] for z in range(len(targets))], dim=0)
+        if args.clip_preprocess:
+            resized_img = [torchvision.transforms.Resize([224,224])(images.tensors[i][:, :img_sizes[i,0], :img_sizes[i,1]]) for i in range(bs)]
+            resized_img = torch.stack(resized_img, dim=0)
+            decoder_mask = None
+        else:
+            resized_img = torchvision.transforms.Resize([224,224])(image.tensors)
+            raise NotImplementedError("undefined decoder_mask")
+        # vision encoder
+        feature_maps = model.encode_image(resized_img, model.multi_scale)
+        # vision decoder
+        if model.multi_scale:
+            vision_output_lst = []
+            for idx in range(len(feature_maps)):
+                vision_output = model.hoi_visual_decoder(image=feature_maps[idx], mask=decoder_mask, prompt_hint=prompt_hint)
+                vision_output_lst.append(vision_output)
+            vision_outputs = {}
+            key_lst = list(vision_output_lst[0].keys())
+            for k in key_lst:
+                vision_outputs[k] = torch.cat([vision_output_lst[scale_i][k] for scale_i in range(len(vision_output_lst))], dim=1)
+        else:
+            feature_maps = (1 - torch.tanh(model.gate_weight)) * feature_maps + torch.tanh(model.gate_weight) * model.vision_proj(feature_maps) # torch.Size([8, 196, 768])
+            vision_outputs = model.hoi_visual_decoder(image=feature_maps, mask=decoder_mask, prompt_hint=prompt_hint)
 
         hoi_features = vision_outputs['hoi_features']
         hoi_features = hoi_features / hoi_features.norm(dim=-1, keepdim=True)
@@ -100,7 +129,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         outputs = {"logits_per_hoi": logits_per_hoi,
                    "pred_boxes": pred_boxes,
                    "box_scores": box_scores,
-                   "aux_outputs": vision_outputs["aux_outputs"],
+                #    "aux_outputs": vision_outputs["aux_outputs"],
                    "attn_maps": vision_outputs['attn_maps']}
 
         loss_dict, indices = criterion(outputs, targets)
@@ -230,7 +259,7 @@ def prepare_inputs(images, targets, data_loader, device):
 
 
 @torch.no_grad()
-def prepare_text_inputs(model, texts, device, pure_words=False):
+def prepare_text_inputs(model, texts, device):
     sot_token = _tokenizer.encoder["<|startoftext|>"]
     eot_token = _tokenizer.encoder["<|endoftext|>"]
 
@@ -243,9 +272,9 @@ def prepare_text_inputs(model, texts, device, pure_words=False):
         object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
         text_tokens.append([action_token, object_token])
 
-    text_features = model.encode_text(text_tokens, pure_words)
-    text_features /= text_features.norm(dim=-1, keepdim=True)
-    return text_features
+    # text_features = model.encode_text(text_tokens, pure_words)
+    # text_features /= text_features.norm(dim=-1, keepdim=True)
+    return text_tokens
 
 
 def get_flop_stats(model, data_loader):

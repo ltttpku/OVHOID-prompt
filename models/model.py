@@ -275,14 +275,15 @@ class HOIVisionTransformer(nn.Module):
             pred_boxes = self.bbox_embed(hidden).sigmoid() # [layers, L, N, 8]
             box_scores = box_scores.permute(0, 2, 1, 3) # [layers, N, L, 1]
             pred_boxes = pred_boxes.permute(0, 2, 1, 3) # [layers, N, L, 8]
-            aux_outputs = [{"pred_boxes": a, "box_scores": b} for a, b in zip(pred_boxes[:-1], box_scores[:-1])]
+            # aux_outputs = [{"pred_boxes": a, "box_scores": b} for a, b in zip(pred_boxes[:-1], box_scores[:-1])]
 
             return_dict = {#"image_features": image_features,
                            "hoi_features": hoi_features,
                            "pred_boxes": pred_boxes[-1],
                            "box_scores": box_scores[-1],
                            "attn_maps": attn_map,
-                           "aux_outputs": aux_outputs}
+                        #    "aux_outputs": aux_outputs
+                           }
         else:
             box_scores = self.bbox_score(hoi)
             pred_boxes = self.bbox_embed(hoi).sigmoid()
@@ -307,6 +308,7 @@ class HOIDetector(nn.Module):
         clip_preprocess: bool,
         vision_decoder_layers: int,
         vision_decoder_heads: int,
+        multi_scale: bool,
         # detection head
         enable_dec: bool,
         dec_heads: int,
@@ -346,6 +348,9 @@ class HOIDetector(nn.Module):
             ("vision_proj_fc2", nn.Linear(vision_width, vision_width)),
             ("vision_proj_dropout2", nn.Dropout(0.2)),
         ]))
+        self.gate_weight = torch.nn.Parameter(torch.as_tensor(0.0))
+        # self.vision_mlp = nn.Parameter((vision_width ** -0.5) * torch.randn(vision_width, vision_width))
+        self.multi_scale = multi_scale
 
         self.hoi_visual_decoder = HOIVisionTransformer(
             image_resolution=image_resolution,
@@ -410,6 +415,8 @@ class HOIDetector(nn.Module):
         nn.init.normal_(self.promp_proj.proj_fc1.weight, std=0.01)
         nn.init.normal_(self.promp_proj.proj_fc2.weight, std=0.01)
         # nn.init.xavier_normal_(self.promp_proj.proj_fc2.weight)
+        nn.init.normal_(self.vision_proj.vision_proj_fc1.weight, std=0.01)
+        nn.init.normal_(self.vision_proj.vision_proj_fc2.weight, std=0.01)
 
     def build_attention_mask(self):
         # lazily create causal attention mask, with full attention between the vision tokens
@@ -431,8 +438,8 @@ class HOIDetector(nn.Module):
     def dtype(self):
         return self.visual.conv1.weight.dtype
 
-    def encode_image(self, image):
-        return self.visual(image.type(self.dtype))
+    def encode_image(self, image, multi_scale=False):
+        return self.visual(image.type(self.dtype), multi_scale)
 
     def encode_text(self, text, pure_words=False):
         # x = self.token_embedding(text).type(self.dtype)  # [batch_size, n_ctx, d_model]
@@ -505,10 +512,21 @@ class HOIDetector(nn.Module):
             resized_img = torchvision.transforms.Resize([224,224])(image)
             raise NotImplementedError("undefined decoder_mask")
         # vision encoder
-        feature_maps = self.encode_image(resized_img)
-        feature_maps = self.vision_proj(feature_maps)  # torch.Size([8, 196, 768])
+        feature_maps = self.encode_image(resized_img, self.multi_scale)
         # vision decoder
-        vision_outputs = self.hoi_visual_decoder(image=feature_maps, mask=decoder_mask, prompt_hint=prompt_hint)
+        if self.multi_scale:
+            vision_output_lst = []
+            for idx in range(len(feature_maps)):
+                vision_output = self.hoi_visual_decoder(image=feature_maps[idx], mask=decoder_mask, prompt_hint=prompt_hint)
+                vision_output_lst.append(vision_output)
+            vision_outputs = {}
+            key_lst = list(vision_output_lst[0].keys())
+            for k in key_lst:
+                vision_outputs[k] = torch.cat([vision_output_lst[scale_i][k] for scale_i in range(len(vision_output_lst))], dim=1)
+        else:
+            feature_maps = (1 - torch.tanh(self.gate_weight)) * feature_maps + torch.tanh(self.gate_weight) * self.vision_proj(feature_maps) # torch.Size([8, 196, 768])
+            vision_outputs = self.hoi_visual_decoder(image=feature_maps, mask=decoder_mask, prompt_hint=prompt_hint)
+        # import pdb; pdb.set_trace()
         # text encoder
         text_features = self.encode_text(text)
 
@@ -620,7 +638,7 @@ def convert_weights(model: nn.Module):
 
         nnParams_modules = [
             "text_projection", "proj", "hoi_prefix", "hoi_conjun", "hoi_pos_embed",
-            "hoi_token_embed", "class_embedding", "positional_embedding"]
+            "hoi_token_embed", "class_embedding", "positional_embedding", "vision_mlp"]
         for name in nnParams_modules:
             if hasattr(l, name):
                 attr = getattr(l, name)
@@ -645,6 +663,7 @@ def build_model(args):
         clip_preprocess=args.clip_preprocess,
         vision_decoder_layers=args.vision_decoder_layers,
         vision_decoder_heads=args.vision_decoder_heads,
+        multi_scale=args.multi_scale,
         # bounding box head
         enable_dec=args.enable_dec,
         dec_heads=args.dec_heads,
