@@ -5,7 +5,7 @@
 #SBATCH --qos=level0
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
-#SBATCH --gres=gpu:2             # number of gpus per node
+#SBATCH --gres=gpu:1             # number of gpus per node
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=100G               # total memory (RAM) per node
 #SBATCH --time=0-10:00:00          # total run time limit (HH:MM:SS)
@@ -31,26 +31,76 @@ conda activate thid
 
 
 ## Training
-python -m torch.distributed.launch --nproc_per_node=2 --master_port 13332 --use_env main.py \
-    --batch_size 128 \
+# python -m torch.distributed.launch --nproc_per_node=2 --master_port 1222 --use_env main.py \
+#     --batch_size 64 \
+#     --output_dir checkpoints/swig_bs2x128_lr1e-4_token5_ms \
+#     --epochs 150 \
+#     --lr 1e-4 --min-lr 1e-7 \
+#     --hoi_token_length 5 \
+#     --enable_dec \
+#     --dataset_file swig --multi_scale true
+
+
+## Inference
+export MASTER_ADDR=localhost
+export MASTER_PORT=5679
+
+python -m torch.distributed.launch --nproc_per_node=1 --master_port 1222 --use_env main.py \
+    --batch_size 8 \
     --output_dir checkpoints/swig_bs2x128_lr1e-4_token5_ms \
     --epochs 150 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 5 \
     --enable_dec \
-    --dataset_file swig --multi_scale true
+    --dataset_file swig --multi_scale true --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs2x128_lr1e-4_token5_ms/checkpoint.pth
 
+python -m torch.distributed.launch --nproc_per_node=1 --master_port 1222 --use_env main.py \
+    --batch_size 8 \
+    --output_dir checkpoints/swig_bs2x128_lr1e-4_token5_ms \
+    --epochs 150 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs2x128_lr1e-4_token5_ms/checkpoint0090.pth
 
-## Inference
-# export MASTER_ADDR=localhost
-# export MASTER_PORT=5679
+python -m torch.distributed.launch --nproc_per_node=1 --master_port 1222 --use_env main.py \
+    --batch_size 8 \
+    --output_dir checkpoints/swig_bs2x128_lr1e-4_token5_ms \
+    --epochs 150 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs2x128_lr1e-4_token5_ms/checkpoint0070.pth
 
-# python main.py --eval \
-#     --batch_size 8 \
-#     --output_dir outputs/ \
-#     --hoi_token_length 20 \
-#     --enable_dec \
-#     --pretrained checkpoints/swig_bs2x64_lr1e-4_token20_prompt_hint_declayer12/checkpoint0090.pth \
-#     --eval_size 256 \
-#     --test_score_thresh 1e-4 \
-#     --dataset_file swig
+python -m torch.distributed.launch --nproc_per_node=1 --master_port 1222 --use_env main.py \
+    --batch_size 8 \
+    --output_dir checkpoints/swig_bs2x128_lr1e-4_token5_ms \
+    --epochs 150 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs2x128_lr1e-4_token5_ms/checkpoint0050.pth
+
+python -m torch.distributed.launch --nproc_per_node=1 --master_port 1222 --use_env main.py \
+    --batch_size 8 \
+    --output_dir checkpoints/swig_bs2x128_lr1e-4_token5_ms \
+    --epochs 150 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs2x128_lr1e-4_token5_ms/checkpoint0030.pth
+
+python -m torch.distributed.launch --nproc_per_node=1 --master_port 1222 --use_env main.py \
+    --batch_size 8 \
+    --output_dir checkpoints/swig_bs2x128_lr1e-4_token5_ms \
+    --epochs 150 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs2x128_lr1e-4_token5_ms/checkpoint0010.pth
