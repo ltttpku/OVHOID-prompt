@@ -5,7 +5,7 @@
 #SBATCH --qos=level0
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
-#SBATCH --gres=gpu:2             # number of gpus per node
+#SBATCH --gres=gpu:1             # number of gpus per node
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=100G               # total memory (RAM) per node
 #SBATCH --time=0-10:00:00          # total run time limit (HH:MM:SS)
@@ -31,14 +31,14 @@ conda activate thid
 
 
 ## Training
-python -m torch.distributed.launch --nproc_per_node=2 --master_port 2113 --use_env main.py \
-    --batch_size 32 \
-    --output_dir checkpoints/swig_bs2x32_lr1e-4_token5_ms \
-    --epochs 125 \
+python -m torch.distributed.launch --nproc_per_node=1 --master_port 1991 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11 \
+    --epochs 100 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 5 \
     --enable_dec \
-    --dataset_file swig --multi_scale true
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11
 
 
 ## Inference

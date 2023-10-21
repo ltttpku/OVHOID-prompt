@@ -5,7 +5,7 @@
 #SBATCH --qos=level0
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
-#SBATCH --gres=gpu:2             # number of gpus per node
+#SBATCH --gres=gpu:1             # number of gpus per node
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=100G               # total memory (RAM) per node
 #SBATCH --time=0-10:00:00          # total run time limit (HH:MM:SS)
@@ -31,35 +31,26 @@ conda activate thid
 
 
 ## Training
-# python -m torch.distributed.launch --nproc_per_node=2 --master_port 3211 --use_env main.py \
-#     --batch_size 64 \
-#     --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms \
-#     --epochs 125 \
-#     --lr 1e-4 --min-lr 1e-7 \
-#     --hoi_token_length 10 \
-#     --enable_dec \
-#     --dataset_file swig --multi_scale true
+python -m torch.distributed.launch --nproc_per_node=1 --master_port 1991 --use_env main.py \
+    --batch_size 128 \
+    --output_dir checkpoints/swig_bs1x128_lr1e-4_token5_ms5+8+11 \
+    --epochs 100 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11
+
 
 ## Inference
-export MASTER_ADDR=localhost
-export MASTER_PORT=5679
+# export MASTER_ADDR=localhost
+# export MASTER_PORT=5679
 
-python -m torch.distributed.launch --nproc_per_node=1 --master_port 3211 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms \
-    --epochs 125 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms/checkpoint.pth
-
-# python -m torch.distributed.launch --nproc_per_node=1 --master_port 3211 --use_env main.py \
+# python -m torch.distributed.launch --nproc_per_node=1 --master_port 2113 --use_env main.py \
 #     --batch_size 8 \
-#     --output_dir checkpoints/swig_bs2x128_lr1e-4_token5_ms \
+#     --output_dir checkpoints/swig_bs2x64_lr1e-4_token5_ms \
 #     --epochs 150 \
 #     --lr 1e-4 --min-lr 1e-7 \
 #     --hoi_token_length 5 \
 #     --enable_dec \
 #     --dataset_file swig --multi_scale true --eval --test_score_thresh 1e-4 \
-#     --pretrained checkpoints/swig_bs2x128_lr1e-4_token5_ms/checkpoint.pth
+#     --pretrained checkpoints/swig_bs2x64_lr1e-4_token5_ms/checkpoint.pth
