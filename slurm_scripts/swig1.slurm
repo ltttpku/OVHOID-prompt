@@ -31,7 +31,7 @@ conda activate thid
 
 
 ## Training
-python -m torch.distributed.launch --nproc_per_node=1 --master_port 1991 --use_env main.py \
+python -m torch.distributed.launch --nproc_per_node=1 --master_port 1995 --use_env main.py \
     --batch_size 128 \
     --output_dir checkpoints/swig_bs1x128_lr1e-4_token5_ms5+8+11 \
     --epochs 100 \
