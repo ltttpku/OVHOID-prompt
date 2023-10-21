@@ -86,6 +86,18 @@ python -m torch.distributed.launch --nproc_per_node=2 --use_env main.py \
     --dataset_file swig
 ```
 
+
+```bash
+CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs2x64_lr1e-4_token5_ms4 \
+    --epochs 100 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5\
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 2 5 8 11
+```
+
 ## Inference
 
 Run this command to evaluate the model on HICO-DET dataset

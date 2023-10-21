@@ -5,6 +5,23 @@ Utilities for bounding box manipulation and GIoU.
 import torch
 from torchvision.ops.boxes import box_area
 
+def paired_box_to_score(x, type="min-size"):
+    """
+    x: N*8, N*[subject_bbox, object_bbox], cxcywh
+    """
+    subject_sizes = x[:, 2] * x[:, 3]
+    object_sizes = x[:, 6] * x[:, 7]
+    sizes = torch.stack([subject_sizes, object_sizes], dim=1)
+    if type == "min-size":
+        scores = torch.min(sizes, dim=1)[0]
+    elif type == "max-size":
+        scores = torch.max(sizes, dim=1)[0]
+    elif type == "center-dis":
+        dis = torch.cdist(x[:, 0:2], x[:, 4:6], p=2)
+        scores = torch.diag(dis)
+    else:
+        raise NotImplementedError
+    return scores
 
 def box_cxcywh_to_xyxy(x):
     x_c, y_c, w, h = x.unbind(-1)

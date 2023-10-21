@@ -32,7 +32,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         images, targets, texts = prepare_inputs(images, targets, data_loader, device)
         # images.tensors:torch.Size([8, 3, 320, 480]); images.mask: torch.Size([8, 320, 480])
         img_sizes = torch.stack([targets[z]['size'] for z in range(len(targets))], dim=0)
-        outputs = model(images.tensors, texts, images.mask, img_sizes)
+        outputs = model(images.tensors, texts, images.mask, img_sizes) # dict_keys(['logits_per_hoi', 'pred_boxes', 'box_scores', 'attn_maps', 'level_id'])
         loss_dict, indices = criterion(outputs, targets)
         weight_dict = criterion.weight_dict
         losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
@@ -102,15 +102,16 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
             resized_img = torch.stack(resized_img, dim=0)
             decoder_mask = None
         else:
-            resized_img = torchvision.transforms.Resize([224,224])(image.tensors)
+            resized_img = torchvision.transforms.Resize([224,224])(images.tensors)
             raise NotImplementedError("undefined decoder_mask")
         # vision encoder
-        feature_maps = model.encode_image(resized_img, model.multi_scale)
+        feature_maps = model.encode_image(resized_img, model.multi_scale, model.f_idxs)
         # vision decoder
         if model.multi_scale:
             vision_output_lst = []
             for idx in range(len(feature_maps)):
                 vision_output = model.hoi_visual_decoder(image=feature_maps[idx], mask=decoder_mask, prompt_hint=prompt_hint)
+                vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / len(feature_maps)
                 vision_output_lst.append(vision_output)
             vision_outputs = {}
             key_lst = list(vision_output_lst[0].keys())
@@ -119,7 +120,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         else:
             feature_maps = (1 - torch.tanh(model.gate_weight)) * feature_maps + torch.tanh(model.gate_weight) * model.vision_proj(feature_maps) # torch.Size([8, 196, 768])
             vision_outputs = model.hoi_visual_decoder(image=feature_maps, mask=decoder_mask, prompt_hint=prompt_hint)
-
+        
         hoi_features = vision_outputs['hoi_features']
         hoi_features = hoi_features / hoi_features.norm(dim=-1, keepdim=True)
         logits_per_hoi = model.logit_scale.exp() * hoi_features @ text_features.t()
@@ -130,7 +131,8 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
                    "pred_boxes": pred_boxes,
                    "box_scores": box_scores,
                 #    "aux_outputs": vision_outputs["aux_outputs"],
-                   "attn_maps": vision_outputs['attn_maps']}
+                   "attn_maps": vision_outputs['attn_maps'],
+                   "level_id": vision_outputs["level_id"],}
 
         loss_dict, indices = criterion(outputs, targets)
         weight_dict = criterion.weight_dict

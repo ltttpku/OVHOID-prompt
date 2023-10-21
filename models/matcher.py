@@ -10,7 +10,7 @@ import torch
 from scipy.optimize import linear_sum_assignment
 from torch import nn
 
-from utils.box_ops import box_cxcywh_to_xyxy, generalized_box_iou
+from utils.box_ops import box_cxcywh_to_xyxy, generalized_box_iou, paired_box_to_score
 
 
 class HungarianMatcher(nn.Module):
@@ -27,6 +27,8 @@ class HungarianMatcher(nn.Module):
         cost_bbox: float = 1,
         cost_giou: float = 1,
         cost_conf: float = 1,
+        hoi_type: str = 'min',
+        cost_hoi_type: float = 1,
     ):
         """Creates the matcher
 
@@ -41,6 +43,8 @@ class HungarianMatcher(nn.Module):
         self.cost_giou = cost_giou
         self.cost_conf = cost_conf
         assert cost_class != 0 or cost_bbox != 0 or cost_giou != 0 or cost_conf != 0, "all costs cant be 0"
+        self.hoi_type = hoi_type
+        self.cost_hoi_type = cost_hoi_type
 
     @torch.no_grad()
     def forward(self, outputs, targets):
@@ -111,11 +115,18 @@ class HungarianMatcher(nn.Module):
         # Compute the giou cost betwen boxes
         cost_pgiou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox[:, :4]), box_cxcywh_to_xyxy(tgt_bbox[:, :4]))
         cost_ogiou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox[:, 4:]), box_cxcywh_to_xyxy(tgt_bbox[:, 4:]))
-
+        
+        # Compute the level cost
+        tgt_bbox_scores = paired_box_to_score(tgt_bbox, type=self.hoi_type)
+        tgt_bbox_scores = tgt_bbox_scores.unsqueeze(1)
+        out_levels = outputs["level_id"].flatten(0, 1)
+        cost_level = torch.cdist(out_levels.float(), tgt_bbox_scores.float(), p=1)
+        
         # Final cost matrix
         C = self.cost_bbox * cost_pbbox + self.cost_bbox * cost_obbox + \
             self.cost_giou * cost_pgiou + self.cost_giou * cost_ogiou + \
-            self.cost_class * cost_class + self.cost_conf * cost_conf
+            self.cost_class * cost_class + self.cost_conf * cost_conf + \
+            self.cost_hoi_type * cost_level
         C = C.view(bs, num_queries, -1).cpu()
 
         sizes = [len(v["hois"]) for v in targets]
@@ -129,4 +140,6 @@ def build_matcher(args):
         cost_bbox=args.set_cost_bbox,
         cost_giou=args.set_cost_giou,
         cost_conf=args.set_cost_conf,
+        hoi_type=args.hoi_type,
+        cost_hoi_type=args.cost_hoi_type,
     )

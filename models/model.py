@@ -309,6 +309,7 @@ class HOIDetector(nn.Module):
         vision_decoder_layers: int,
         vision_decoder_heads: int,
         multi_scale: bool,
+        f_idxs : list,
         # detection head
         enable_dec: bool,
         dec_heads: int,
@@ -351,6 +352,7 @@ class HOIDetector(nn.Module):
         self.gate_weight = torch.nn.Parameter(torch.as_tensor(0.0))
         # self.vision_mlp = nn.Parameter((vision_width ** -0.5) * torch.randn(vision_width, vision_width))
         self.multi_scale = multi_scale
+        self.f_idxs = f_idxs
 
         self.hoi_visual_decoder = HOIVisionTransformer(
             image_resolution=image_resolution,
@@ -438,8 +440,8 @@ class HOIDetector(nn.Module):
     def dtype(self):
         return self.visual.conv1.weight.dtype
 
-    def encode_image(self, image, multi_scale=False):
-        return self.visual(image.type(self.dtype), multi_scale)
+    def encode_image(self, image, multi_scale=False, f_idxs=[]):
+        return self.visual(image.type(self.dtype), multi_scale, f_idxs)
 
     def encode_text(self, text, pure_words=False):
         # x = self.token_embedding(text).type(self.dtype)  # [batch_size, n_ctx, d_model]
@@ -512,12 +514,13 @@ class HOIDetector(nn.Module):
             resized_img = torchvision.transforms.Resize([224,224])(image)
             raise NotImplementedError("undefined decoder_mask")
         # vision encoder
-        feature_maps = self.encode_image(resized_img, self.multi_scale)
+        feature_maps = self.encode_image(resized_img, self.multi_scale, self.f_idxs)
         # vision decoder
         if self.multi_scale:
             vision_output_lst = []
             for idx in range(len(feature_maps)):
                 vision_output = self.hoi_visual_decoder(image=feature_maps[idx], mask=decoder_mask, prompt_hint=prompt_hint)
+                vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / len(feature_maps)
                 vision_output_lst.append(vision_output)
             vision_outputs = {}
             key_lst = list(vision_output_lst[0].keys())
@@ -552,6 +555,7 @@ class HOIDetector(nn.Module):
             "pred_boxes": vision_outputs["pred_boxes"],
             "box_scores": vision_outputs["box_scores"],
             "attn_maps": vision_outputs["attn_maps"],
+            "level_id": vision_outputs["level_id"],
         }
         if "aux_outputs" in vision_outputs:
             return_dict.update({"aux_outputs": vision_outputs["aux_outputs"]})
@@ -664,6 +668,7 @@ def build_model(args):
         vision_decoder_layers=args.vision_decoder_layers,
         vision_decoder_heads=args.vision_decoder_heads,
         multi_scale=args.multi_scale,
+        f_idxs = args.f_idxs,
         # bounding box head
         enable_dec=args.enable_dec,
         dec_heads=args.dec_heads,

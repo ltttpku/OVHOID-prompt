@@ -39,7 +39,8 @@ def get_args_parser():
                         help="number of layers in vision transformer")
     parser.add_argument('--multi_scale', default=False, type=lambda x: (str(x).lower() == 'true'),
                         help='whether to use prompt hint in the text encoder')
-    
+    parser.add_argument('--f_idxs', nargs='+', type=int)
+
     # * Text
     parser.add_argument('--context_length', default=77, type=int,
                         help="Maximum length of the text description")
@@ -76,6 +77,10 @@ def get_args_parser():
                         help="giou box coefficient in the matching cost")
     parser.add_argument('--set_cost_conf', default=10, type=float,
                         help="box confidence score coefficient in the matching cost")
+    parser.add_argument('--hoi_type', default="center-dis", type=str, choices=["min-size", "max-size", "center-dis"],
+                        help="hoi_type in the matching cost")
+    parser.add_argument('--cost_hoi_type', default=0, type=float,
+                        help="hoi_type coefficient in the matching cost")
     # * Loss coefficients
     parser.add_argument('--class_loss_coef', default=5, type=float)
     parser.add_argument('--bbox_loss_coef', default=5, type=float)
