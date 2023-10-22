@@ -111,7 +111,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
             vision_output_lst = []
             for idx in range(len(feature_maps)):
                 vision_output = model.hoi_visual_decoder(image=feature_maps[idx], mask=decoder_mask, prompt_hint=prompt_hint)
-                vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / len(feature_maps)
+                vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / (len(feature_maps)-1)
                 vision_output_lst.append(vision_output)
             vision_outputs = {}
             key_lst = list(vision_output_lst[0].keys())

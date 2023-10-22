@@ -310,6 +310,7 @@ class HOIDetector(nn.Module):
         vision_decoder_heads: int,
         multi_scale: bool,
         f_idxs : list,
+        semantic_query: bool,
         # detection head
         enable_dec: bool,
         dec_heads: int,
@@ -353,6 +354,12 @@ class HOIDetector(nn.Module):
         # self.vision_mlp = nn.Parameter((vision_width ** -0.5) * torch.randn(vision_width, vision_width))
         self.multi_scale = multi_scale
         self.f_idxs = f_idxs
+        self.semantic_query = semantic_query
+
+        if semantic_query:
+            if multi_scale:
+                assert hoi_token_length == len(f_idxs) * 4
+
 
         self.hoi_visual_decoder = HOIVisionTransformer(
             image_resolution=image_resolution,
@@ -520,7 +527,7 @@ class HOIDetector(nn.Module):
             vision_output_lst = []
             for idx in range(len(feature_maps)):
                 vision_output = self.hoi_visual_decoder(image=feature_maps[idx], mask=decoder_mask, prompt_hint=prompt_hint)
-                vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / len(feature_maps)
+                vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / (len(feature_maps)-1)
                 vision_output_lst.append(vision_output)
             vision_outputs = {}
             key_lst = list(vision_output_lst[0].keys())
@@ -669,6 +676,7 @@ def build_model(args):
         vision_decoder_heads=args.vision_decoder_heads,
         multi_scale=args.multi_scale,
         f_idxs = args.f_idxs,
+        semantic_query=args.semantic_query,
         # bounding box head
         enable_dec=args.enable_dec,
         dec_heads=args.dec_heads,

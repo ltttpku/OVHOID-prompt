@@ -121,7 +121,7 @@ class HungarianMatcher(nn.Module):
         tgt_bbox_scores = tgt_bbox_scores.unsqueeze(1)
         out_levels = outputs["level_id"].flatten(0, 1)
         cost_level = torch.cdist(out_levels.float(), tgt_bbox_scores.float(), p=1)
-        
+
         # Final cost matrix
         C = self.cost_bbox * cost_pbbox + self.cost_bbox * cost_obbox + \
             self.cost_giou * cost_pgiou + self.cost_giou * cost_ogiou + \
@@ -141,5 +141,5 @@ def build_matcher(args):
         cost_giou=args.set_cost_giou,
         cost_conf=args.set_cost_conf,
         hoi_type=args.hoi_type,
-        cost_hoi_type=args.cost_hoi_type,
+        cost_hoi_type=args.set_cost_hoi_type,
     )

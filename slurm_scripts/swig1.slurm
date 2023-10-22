@@ -31,26 +31,26 @@ conda activate thid
 
 
 ## Training
-# python -m torch.distributed.launch --nproc_per_node=1 --master_port 1995 --use_env main.py \
-#     --batch_size 128 \
-#     --output_dir checkpoints/swig_bs1x128_lr1e-4_token5_ms5+8+11 \
-#     --epochs 100 \
-#     --lr 1e-4 --min-lr 1e-7 \
-#     --hoi_token_length 5 \
-#     --enable_dec \
-#     --dataset_file swig --multi_scale true --f_idxs 5 8 11
-
-
-## Inference
-export MASTER_ADDR=localhost
-export MASTER_PORT=5679
-
-python -m torch.distributed.launch --nproc_per_node=1 --master_port 1995 --use_env main.py \
-    --batch_size 8 \
-    --output_dir checkpoints/swig_bs1x128_lr1e-4_token5_ms5+8+11 \
+python -m torch.distributed.launch --nproc_per_node=1 --master_port 1998 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost20 \
     --epochs 100 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 5 \
     --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs1x128_lr1e-4_token5_ms5+8+11/checkpoint.pth
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 20
+
+
+## Inference
+# export MASTER_ADDR=localhost
+# export MASTER_PORT=5679
+
+# python -m torch.distributed.launch --nproc_per_node=1 --master_port 1991 --use_env main.py \
+#     --batch_size 8 \
+#     --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11 \
+#     --epochs 100 \
+#     --lr 1e-4 --min-lr 1e-7 \
+#     --hoi_token_length 5 \
+#     --enable_dec \
+#     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --eval --test_score_thresh 1e-4 \
+#     --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11/checkpoint.pth
