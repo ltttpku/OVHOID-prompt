@@ -1,19 +1,19 @@
 #!/bin/bash
 #SBATCH --job-name=vision-language    # create a short name for your job
-#SBATCH --partition=gpu
+#SBATCH --partition=DGX
 #SBATCH --account=research
-#SBATCH --qos=level0
+#SBATCH --qos=lv0b
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
 #SBATCH --gres=gpu:1             # number of gpus per node
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=100G               # total memory (RAM) per node
-#SBATCH --time=0-10:00:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=0-24:00:00          # total run time limit (HH:MM:SS)
 #SBATCH --cpus-per-task=8      # cpu-cores per task (>1 if multi-threaded tasks)
 #SBATCH --output=/scratch/generalvision/ting/OVHOID-prompt/logs/out-%j.out      # output format
 #SBATCH --error=/scratch/generalvision/ting/OVHOID-prompt/logs/out-%j.err      # error output file
-#SBATCH --exclude=lambda-hyperplane[00]
-#SBATCH --export=ALL
+### SBATCH --exclude=lambda-hyperplane[00]
+### SBATCH --export=ALL
 
 #--------------------task  part-------------------------
 ## clean env
@@ -23,7 +23,9 @@ module purge
 #module load slurm/slurm/20.11.8
 
 ## load conda
-module load anaconda3/2021.11
+source /etc/profile
+module load slurm/BigAI/23.02.2
+module load cuda11.7
 
 cd /scratch/generalvision/ting/OVHOID-prompt
 source activate
@@ -31,6 +33,20 @@ conda activate thid
 
 
 ## Training
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1989 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11 \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 2 5 8 11
+
+
+## Inference
+# export MASTER_ADDR=localhost
+# export MASTER_PORT=5679
+
 # python -m torch.distributed.launch --nproc_per_node=1 --master_port 1991 --use_env main.py \
 #     --batch_size 64 \
 #     --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10 \
@@ -38,49 +54,5 @@ conda activate thid
 #     --lr 1e-4 --min-lr 1e-7 \
 #     --hoi_token_length 5 \
 #     --enable_dec \
-#     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10
-
-
-## Inference
-export MASTER_ADDR=localhost
-export MASTER_PORT=5679
-
-python -m torch.distributed.launch --nproc_per_node=1 --master_port 1991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10 \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 5 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10/checkpoint0040.pth
-
-python -m torch.distributed.launch --nproc_per_node=1 --master_port 1991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10 \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 5 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10/checkpoint0050.pth
-
-python -m torch.distributed.launch --nproc_per_node=1 --master_port 1991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10 \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 5 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10/checkpoint0060.pth
-
-python -m torch.distributed.launch --nproc_per_node=1 --master_port 1991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10 \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 5 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10/checkpoint.pth
+#     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --eval --test_score_thresh 1e-4 \
+#     --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10/checkpoint0040.pth
