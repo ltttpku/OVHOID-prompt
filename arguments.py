@@ -42,6 +42,8 @@ def get_args_parser():
     parser.add_argument('--f_idxs', nargs='+', type=int)
     parser.add_argument('--semantic_query', default=False, type=lambda x: (str(x).lower() == 'true'),
                         help='whether to use prompt hint in the text encoder')
+    parser.add_argument('--semantic_units_file', default="", type=str,
+                        help='whether to use prompt hint in the text encoder')
     # * Text
     parser.add_argument('--context_length', default=77, type=int,
                         help="Maximum length of the text description")

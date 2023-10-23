@@ -1,4 +1,4 @@
-import os
+import os, pickle
 import copy
 import math
 import numpy as np
@@ -121,6 +121,9 @@ class HOIVisionTransformer(nn.Module):
         enable_dec: bool = False,
         dec_heads: int = 8,
         dec_layers: int = 6,
+        # semantic units
+        semantic_query: bool = False,
+        semantic_units_file: str = "",
     ):
         super().__init__()
         self.image_resolution = image_resolution
@@ -156,6 +159,17 @@ class HOIVisionTransformer(nn.Module):
         self.bbox_score = nn.Linear(width, 1)
         self.bbox_embed = MLP(width, width, 8, 3)
 
+        self.semantic_query = semantic_query
+        if self.semantic_query:
+            self.multi_region_attention = HOITransformer(width=768, layers=2, heads=4)
+            if os.path.exists(semantic_units_file):
+                print("[INFO] load semantic units from", semantic_units_file)
+                self.semantic_units = pickle.load(open(semantic_units_file, "rb"))
+                self.semantic_units_mapping = nn.Parameter((output_dim ** -0.5) * torch.randn(width, output_dim))
+            else:
+                print("[WARNING] use random semantic units!!!")
+                self.semantic_units = nn.Parameter((width ** -0.5) * torch.randn(50, width))
+                self.semantic_units_mapping = nn.Parameter((width ** -0.5) * torch.randn(50, width))
         self.initialize_parameters()
 
     def initialize_parameters(self):
@@ -208,6 +222,10 @@ class HOIVisionTransformer(nn.Module):
         hoi = self.ln_pre(hoi)
         hoi = hoi.permute(1, 0, 2)  # NLD -> LND
         image = image.permute(1, 0, 2)  # [*, width, grid ** 2]
+        if self.semantic_query:
+            imageee, hoi, attn_map = self.multi_region_attention(image, hoi, mask=None, prompt_hint=torch.zeros(0,768).to(hoi.device))
+            semantics = self.semantic_units @ self.semantic_units_mapping.T
+            hoi = nn.Softmax(dim=-1)(hoi @ semantics.T) @ semantics
         image, hoi, attn_map = self.transformer(image, hoi, mask=None, prompt_hint=prompt_hint)
         image = image.permute(1, 0, 2)  # LND -> NLD
         hoi = hoi.permute(1, 0, 2)  # LND -> NLD
@@ -311,6 +329,7 @@ class HOIDetector(nn.Module):
         multi_scale: bool,
         f_idxs : list,
         semantic_query: bool,
+        semantic_units_file: str,
         # detection head
         enable_dec: bool,
         dec_heads: int,
@@ -354,12 +373,6 @@ class HOIDetector(nn.Module):
         # self.vision_mlp = nn.Parameter((vision_width ** -0.5) * torch.randn(vision_width, vision_width))
         self.multi_scale = multi_scale
         self.f_idxs = f_idxs
-        self.semantic_query = semantic_query
-
-        if semantic_query:
-            if multi_scale:
-                assert hoi_token_length == len(f_idxs) * 4
-
 
         self.hoi_visual_decoder = HOIVisionTransformer(
             image_resolution=image_resolution,
@@ -373,6 +386,8 @@ class HOIDetector(nn.Module):
             enable_dec=enable_dec,
             dec_heads=dec_heads,
             dec_layers=dec_layers,
+            semantic_query=semantic_query,
+            semantic_units_file=semantic_units_file,
         )
 
         # Text
@@ -677,6 +692,7 @@ def build_model(args):
         multi_scale=args.multi_scale,
         f_idxs = args.f_idxs,
         semantic_query=args.semantic_query,
+        semantic_units_file=args.semantic_units_file,
         # bounding box head
         enable_dec=args.enable_dec,
         dec_heads=args.dec_heads,
