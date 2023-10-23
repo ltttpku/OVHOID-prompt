@@ -28,8 +28,8 @@ module load slurm/BigAI/23.02.2
 module load cuda11.7
 
 cd /scratch/generalvision/ting/OVHOID-prompt
-source activate
-conda activate thid
+# source activate
+# conda activate thid
 
 
 ## Training
