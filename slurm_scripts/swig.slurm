@@ -8,7 +8,7 @@
 #SBATCH --gres=gpu:1             # number of gpus per node
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=100G               # total memory (RAM) per node
-#SBATCH --time=0-24:00:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=0-10:00:00          # total run time limit (HH:MM:SS)
 #SBATCH --cpus-per-task=8      # cpu-cores per task (>1 if multi-threaded tasks)
 #SBATCH --output=/scratch/generalvision/ting/OVHOID-prompt/logs/out-%j.out      # output format
 #SBATCH --error=/scratch/generalvision/ting/OVHOID-prompt/logs/out-%j.err      # error output file
