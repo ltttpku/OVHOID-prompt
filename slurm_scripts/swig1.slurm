@@ -33,14 +33,24 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1989 --use_env main.py \
+# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1989 --use_env main.py \
+#     --batch_size 64 \
+#     --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_ph \
+#     --epochs 120 \
+#     --lr 1e-4 --min-lr 1e-7 \
+#     --hoi_token_length 5 \
+#     --enable_dec \
+#     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --use_prompt_hint true
+
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1966 --use_env main.py \
     --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_ph \
+    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_ph_resume \
     --epochs 120 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 5 \
     --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --use_prompt_hint true
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --use_prompt_hint true \
+    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_ph/checkpoint0060.pth
 
 
 ## Inference
