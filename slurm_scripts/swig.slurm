@@ -42,6 +42,21 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 #     --enable_dec \
 #     --dataset_file swig --multi_scale true --f_idxs 2 5 8 11
 
+# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1989 --use_env main.py \
+#     --batch_size 64 \
+#     --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume \
+#     --epochs 120 \
+#     --lr 1e-4 --min-lr 1e-7 \
+#     --hoi_token_length 5 \
+#     --enable_dec \
+#     --dataset_file swig --multi_scale true --f_idxs 2 5 8 11 \
+#     --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11/checkpoint0060.pth
+
+
+## Inference
+export MASTER_ADDR=localhost
+export MASTER_PORT=5679
+
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1989 --use_env main.py \
     --batch_size 64 \
     --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume \
@@ -49,20 +64,45 @@ cd /scratch/generalvision/ting/OVHOID-prompt
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 5 \
     --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 2 5 8 11 \
-    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11/checkpoint0060.pth
+    --dataset_file swig --multi_scale true --f_idxs 2 5 8 11 --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume/checkpoint0060.pth
 
+home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1989 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 2 5 8 11 --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume/checkpoint0050.pth
 
-## Inference
-# export MASTER_ADDR=localhost
-# export MASTER_PORT=5679
+home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1989 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 2 5 8 11 --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume/checkpoint0040.pth
 
-# python -m torch.distributed.launch --nproc_per_node=1 --master_port 1991 --use_env main.py \
-#     --batch_size 64 \
-#     --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10 \
-#     --epochs 100 \
-#     --lr 1e-4 --min-lr 1e-7 \
-#     --hoi_token_length 5 \
-#     --enable_dec \
-#     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --eval --test_score_thresh 1e-4 \
-#     --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms5+8+11_cost10/checkpoint0040.pth
+home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1989 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 2 5 8 11 --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume/checkpoint0030.pth
+
+home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1989 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 5 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 2 5 8 11 --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume/checkpoint0020.pth
