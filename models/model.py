@@ -82,8 +82,9 @@ class HOIResidualAttentionBlock(nn.Module):
         # [PROMPT + HOI] x [PROMPT + HOI], HOI sequential parsing
         hoi_length, bs, dim = hoi.shape
         x = torch.cat([hoi, prompt_hint.unsqueeze(1).repeat(1,bs,1)], dim=0)
-        self.parse_attn_mask = None
-        x = x + self.dropout3(self.hoi_attention(self.hoi_ln1(x), attn_mask=self.parse_attn_mask))
+        if prompt_hint.shape[0] > 0:
+            import pdb; pdb.set_trace() # UPDATE "parse_attn_mask"!!!!
+        x = x + self.dropout3(self.hoi_attention(self.hoi_ln1(x), attn_mask=self.parse_attn_mask[1:, 1:].to(hoi.device)))
         hoi = x[:hoi_length]
 
         return image, hoi, attn_map
@@ -117,6 +118,7 @@ class HOIVisionTransformer(nn.Module):
         output_dim: int,
         hoi_token_length: int = 5,
         hoi_parser_attn_mask: torch.Tensor = None,
+        region_aware_encoder_mask: torch.Tensor = None,
         # bounding box head
         enable_dec: bool = False,
         dec_heads: int = 8,
@@ -151,7 +153,7 @@ class HOIVisionTransformer(nn.Module):
         if enable_dec:
             # self.image_patch_pos = PositionEmbeddingSine(width // 2, normalize=True)
             self.image_patch_pos = nn.Parameter(scale * torch.randn((self.image_resolution // self.patch_size) ** 2, width))
-            # self.hoi_parser_attn_mask = hoi_parser_attn_mask
+            self.hoi_parser_attn_mask = hoi_parser_attn_mask
             decoder_layer = TransformerDecoderLayer(width, dec_heads, normalize_before=True)
             decoder_norm = LayerNorm(width)
             self.bbox_head = TransformerDecoder(decoder_layer, dec_layers, decoder_norm, True)
@@ -161,10 +163,16 @@ class HOIVisionTransformer(nn.Module):
 
         self.semantic_query = semantic_query
         if self.semantic_query:
-            self.multi_region_attention = HOITransformer(width=768, layers=2, heads=4)
+            decoder_layer = TransformerDecoderLayer(d_model=width, nhead=4, normalize_before=True)
+            decoder_norm = LayerNorm(width)
+            self.multi_region_attention = TransformerDecoder(decoder_layer, num_layers=2, norm=decoder_norm, return_intermediate=False)
+            self.region_aware_encoder_mask = region_aware_encoder_mask
+            # self.multi_region_attention = HOITransformer(width=768, layers=2, heads=4)
             if os.path.exists(semantic_units_file):
                 print("[INFO] load semantic units from", semantic_units_file)
                 self.semantic_units = pickle.load(open(semantic_units_file, "rb"))
+                if self.training:
+                    self.semantic_units = self.semantic_units.float()
                 self.semantic_units_mapping = nn.Parameter((output_dim ** -0.5) * torch.randn(width, output_dim))
             else:
                 print("[WARNING] use random semantic units!!!")
@@ -223,10 +231,7 @@ class HOIVisionTransformer(nn.Module):
         hoi = hoi.permute(1, 0, 2)  # NLD -> LND
         image = image.permute(1, 0, 2)  # [*, width, grid ** 2]
         if self.semantic_query:
-            if self.training:
-                imageee, hoi, attn_map = self.multi_region_attention(image, hoi, mask=None, prompt_hint=torch.zeros(0,768).to(hoi.device))
-            else:
-                imageee, hoi, attn_map = self.multi_region_attention(image, hoi, mask=None, prompt_hint=torch.zeros(0,768).to(hoi.device).half())
+            hoi = self.multi_region_attention(tgt=hoi, memory=image, memory_mask=self.region_aware_encoder_mask.to(hoi.device))[-1]
             semantics = self.semantic_units @ self.semantic_units_mapping.T
             hoi = nn.Softmax(dim=-1)(hoi @ semantics.T) @ semantics
         image, hoi, attn_map = self.transformer(image, hoi, mask=None, prompt_hint=prompt_hint)
@@ -285,7 +290,7 @@ class HOIVisionTransformer(nn.Module):
 
             hidden = self.bbox_head(
                 tgt=hoi,
-                # tgt_mask=self.hoi_parser_attn_mask[1:, 1:].to(hoi.device), # exclude [CLS]
+                tgt_mask=self.hoi_parser_attn_mask[1:, 1:].to(hoi.device), # exclude [CLS]
                 query_pos=self.hoi_pos_embed[:, None, :],
                 # memory=image[1:], # exclude [CLS]
                 memory=image,
@@ -386,6 +391,7 @@ class HOIDetector(nn.Module):
             output_dim=embed_dim,
             hoi_token_length=hoi_token_length,
             hoi_parser_attn_mask=self.build_hoi_attention_mask(),
+            region_aware_encoder_mask = self.build_region_aware_encoder_mask(tgt_len=hoi_token_length, mem_len=(image_resolution//vision_patch_size)**2),
             enable_dec=enable_dec,
             dec_heads=dec_heads,
             dec_layers=dec_layers,
@@ -459,6 +465,14 @@ class HOIDetector(nn.Module):
         mask = torch.empty(self.hoi_token_length + 1, self.hoi_token_length + 1)
         mask.fill_(float("-inf"))
         mask.triu_(1)  # zero out the lower diagonal
+        return mask
+
+    def build_region_aware_encoder_mask(self, tgt_len, mem_len=196):
+        mask = torch.empty(tgt_len, mem_len)
+        mask.fill_(float("-inf"))
+        region_len = mem_len // tgt_len
+        for k in range(tgt_len):
+            mask[k, k*region_len: min((k+1)*region_len, mem_len)] = 0
         return mask
 
     @property
