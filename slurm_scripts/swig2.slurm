@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=vision-language    # create a short name for your job
-#SBATCH --partition=DGX
+#SBATCH --partition=HGX
 #SBATCH --account=research
 #SBATCH --qos=lv0b
 #SBATCH --nodes=1                # node count
@@ -33,12 +33,12 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 1980 --use_env main.py \
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 1982 --use_env main.py \
     --batch_size 32 \
-    --output_dir checkpoints/swig_bs2x32_lr1e-4_token5_ms5+8+11 \
+    --output_dir checkpoints/swig_bs2x32_lr1e-4_token20_ms5+8+11 \
     --epochs 120 \
     --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 5 \
+    --hoi_token_length 20 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11
 
