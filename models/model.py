@@ -464,7 +464,7 @@ class HOIDetector(nn.Module):
         # pytorch uses additive attention mask; fill with -inf
         mask = torch.empty(self.hoi_token_length + 1, self.hoi_token_length + 1)
         mask.fill_(float("-inf"))
-        mask.triu_(1)  # zero out the lower diagonal
+        # mask.triu_(1)  # zero out the lower diagonal
         return mask
 
     def build_region_aware_encoder_mask(self, tgt_len, mem_len=196):
