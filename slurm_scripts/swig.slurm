@@ -12,7 +12,7 @@
 #SBATCH --cpus-per-task=8      # cpu-cores per task (>1 if multi-threaded tasks)
 #SBATCH --output=/scratch/generalvision/ting/OVHOID-prompt/logs/out-%j.out      # output format
 #SBATCH --error=/scratch/generalvision/ting/OVHOID-prompt/logs/out-%j.err      # error output file
-#SBATCH --exclude=hgx-hyperplane[19]
+### SBATCH --exclude=hgx-hyperplane[19]
 ### SBATCH --export=ALL
 
 #--------------------task  part-------------------------
