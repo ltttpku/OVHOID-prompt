@@ -463,7 +463,8 @@ class HOIDetector(nn.Module):
         # lazily create causal attention mask, similar to text encoder
         # pytorch uses additive attention mask; fill with -inf
         mask = torch.empty(self.hoi_token_length + 1, self.hoi_token_length + 1)
-        mask.fill_(float("-inf"))
+        mask.fill_(0.0)
+        # mask.fill_(float("-inf"))
         # mask.triu_(1)  # zero out the lower diagonal
         return mask
 
