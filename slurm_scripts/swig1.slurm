@@ -5,14 +5,14 @@
 #SBATCH --qos=lv0b
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
-#SBATCH --gres=gpu:2             # number of gpus per node
+#SBATCH --gres=gpu:1             # number of gpus per node
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=100G               # total memory (RAM) per node
 #SBATCH --time=0-24:00:00          # total run time limit (HH:MM:SS)
 #SBATCH --cpus-per-task=8      # cpu-cores per task (>1 if multi-threaded tasks)
 #SBATCH --output=/scratch/generalvision/ting/OVHOID-prompt/logs/out-%j.out      # output format
 #SBATCH --error=/scratch/generalvision/ting/OVHOID-prompt/logs/out-%j.err      # error output file
-### SBATCH --exclude=lambda-hyperplane[00]
+#SBATCH --exclude=hgx-hyperplane[19]
 ### SBATCH --export=ALL
 
 #--------------------task  part-------------------------
@@ -33,26 +33,46 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 1981 --use_env main.py \
-    --batch_size 32 \
+# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2981 --use_env main.py \
+#     --batch_size 32 \
+#     --output_dir checkpoints/swig_bs2x32_lr1e-4_token10_ms5+8+11 \
+#     --epochs 120 \
+#     --lr 1e-4 --min-lr 1e-7 \
+#     --hoi_token_length 10 \
+#     --enable_dec \
+#     --dataset_file swig --multi_scale true --f_idxs 5 8 11
+
+
+# ## Inference
+export MASTER_ADDR=localhost
+export MASTER_PORT=5679
+
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2981 --use_env main.py \
+    --batch_size 8 \
     --output_dir checkpoints/swig_bs2x32_lr1e-4_token10_ms5+8+11 \
     --epochs 120 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 10 \
     --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs2x32_lr1e-4_token10_ms5+8+11/checkpoint0090.pth
 
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2981 --use_env main.py \
+    --batch_size 8 \
+    --output_dir checkpoints/swig_bs2x32_lr1e-4_token10_ms5+8+11 \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 10 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs2x32_lr1e-4_token10_ms5+8+11/checkpoint0100.pth
 
-# ## Inference
-# export MASTER_ADDR=localhost
-# export MASTER_PORT=5679
-
-# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 1989 --use_env main.py \
-#     --batch_size 64 \
-#     --output_dir checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume \
-#     --epochs 120 \
-#     --lr 1e-4 --min-lr 1e-7 \
-#     --hoi_token_length 5 \
-#     --enable_dec \
-#     --dataset_file swig --multi_scale true --f_idxs 2 5 8 11 --eval --test_score_thresh 1e-4 \
-#     --pretrained checkpoints/swig_bs1x64_lr1e-4_token5_ms2+5+8+11_resume/checkpoint0060.pth
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2981 --use_env main.py \
+    --batch_size 8 \
+    --output_dir checkpoints/swig_bs2x32_lr1e-4_token10_ms5+8+11 \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 10 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --eval --test_score_thresh 1e-4 \
+    --pretrained checkpoints/swig_bs2x32_lr1e-4_token10_ms5+8+11/checkpoint0110.pth
