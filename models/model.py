@@ -176,6 +176,7 @@ class HOIVisionTransformer(nn.Module):
                 self.semantic_units = pickle.load(open(semantic_units_file, "rb"))
                 if self.training:
                     self.semantic_units = self.semantic_units.float()
+                self.semantic_units = nn.Parameter(self.semantic_units, requires_grad=False)
                 self.semantic_units_mapping = nn.Parameter((output_dim ** -0.5) * torch.randn(width, output_dim))
             else:
                 print("[WARNING] use random semantic units!!!")
