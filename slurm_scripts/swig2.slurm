@@ -55,7 +55,7 @@ export MASTER_PORT=5679
     --hoi_token_length 20 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs1x64_lr1e-4_token20_ms5+8+11/checkpoint0100.pth
+    --pretrained checkpoints/swig_bs1x64_lr1e-4_token20_ms5+8+11_cm5/checkpoint0100.pth
 
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
     --batch_size 64 \
@@ -65,7 +65,7 @@ export MASTER_PORT=5679
     --hoi_token_length 20 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs1x64_lr1e-4_token20_ms5+8+11/checkpoint0110.pth
+    --pretrained checkpoints/swig_bs1x64_lr1e-4_token20_ms5+8+11_cm5/checkpoint0110.pth
 
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
     --batch_size 64 \
@@ -75,4 +75,4 @@ export MASTER_PORT=5679
     --hoi_token_length 20 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs1x64_lr1e-4_token20_ms5+8+11/checkpoint.pth
+    --pretrained checkpoints/swig_bs1x64_lr1e-4_token20_ms5+8+11_cm5/checkpoint.pth
