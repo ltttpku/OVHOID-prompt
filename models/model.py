@@ -126,6 +126,8 @@ class HOIVisionTransformer(nn.Module):
         # semantic units
         semantic_query: bool = False,
         semantic_units_file: str = "",
+        # hyper parameters
+        hoi_dropout_weight: float = 0.5,
     ):
         super().__init__()
         self.image_resolution = image_resolution
@@ -148,6 +150,7 @@ class HOIVisionTransformer(nn.Module):
         self.hoi_token_embed = nn.Parameter(scale * torch.randn(hoi_token_length, width))
         self.hoi_pos_embed = nn.Parameter(scale * torch.randn(hoi_token_length, width))
 
+        self.hoi_dropout = nn.Dropout(hoi_dropout_weight)
         # Additional parameters for detection head
         self.enable_dec = enable_dec
         if enable_dec:
@@ -231,7 +234,7 @@ class HOIVisionTransformer(nn.Module):
         hoi = hoi.permute(1, 0, 2)  # NLD -> LND
         image = image.permute(1, 0, 2)  # [*, width, grid ** 2]
         if self.semantic_query:
-            hoi = self.multi_region_attention(tgt=hoi, memory=image, memory_mask=self.region_aware_encoder_mask.to(hoi.device))[-1]
+            hoi = self.multi_region_attention(tgt=hoi, memory=image)[-1]
             semantics = self.semantic_units @ self.semantic_units_mapping.T
             hoi = nn.Softmax(dim=-1)(hoi @ semantics.T) @ semantics
         image, hoi, attn_map = self.transformer(image, hoi, mask=None, prompt_hint=prompt_hint)
@@ -275,6 +278,7 @@ class HOIVisionTransformer(nn.Module):
         # Map to joint vision-and-text feature space
         # image_features = self.ln_post(image[:, 0, :])
         hoi_features = self.ln_post(hoi)
+        hoi_features = self.hoi_dropout(hoi_features)
         # image_features = image_features @ self.proj
         hoi_features = hoi_features @ self.proj
         # import pdb; pdb.set_trace()
@@ -351,6 +355,9 @@ class HOIDetector(nn.Module):
         prefix_length: int = 8,
         conjun_length: int = 4,
         use_prompt_hint: bool = False,
+        # hyper params
+        hoi_dropout_weight: float = 0.5,
+        feature_map_dropout_weight: float = 0.5,
     ):
         super().__init__()
 
@@ -391,12 +398,13 @@ class HOIDetector(nn.Module):
             output_dim=embed_dim,
             hoi_token_length=hoi_token_length,
             hoi_parser_attn_mask=self.build_hoi_attention_mask(),
-            region_aware_encoder_mask = self.build_region_aware_encoder_mask(tgt_len=hoi_token_length, mem_len=(image_resolution//vision_patch_size)**2),
+            # region_aware_encoder_mask = self.build_region_aware_encoder_mask(tgt_len=hoi_token_length, mem_len=(image_resolution//vision_patch_size)**2),
             enable_dec=enable_dec,
             dec_heads=dec_heads,
             dec_layers=dec_layers,
             semantic_query=semantic_query,
             semantic_units_file=semantic_units_file,
+            hoi_dropout_weight=hoi_dropout_weight,
         )
 
         # Text
@@ -424,6 +432,7 @@ class HOIDetector(nn.Module):
             ("proj_fc2", nn.Linear(vision_width, vision_width))
         ]))
         self.use_prompt_hint = use_prompt_hint
+        self.feature_map_dropout = nn.Dropout(feature_map_dropout_weight)
         self.initialize_parameters()
 
     def initialize_parameters(self):
@@ -559,7 +568,8 @@ class HOIDetector(nn.Module):
         if self.multi_scale:
             vision_output_lst = []
             for idx in range(len(feature_maps)):
-                vision_output = self.hoi_visual_decoder(image=feature_maps[idx], mask=decoder_mask, prompt_hint=prompt_hint)
+                cur_feature_map = self.feature_map_dropout(feature_maps[idx])
+                vision_output = self.hoi_visual_decoder(image=cur_feature_map, mask=decoder_mask, prompt_hint=prompt_hint)
                 vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / (len(feature_maps)-1)
                 vision_output_lst.append(vision_output)
             vision_outputs = {}
@@ -724,6 +734,8 @@ def build_model(args):
         prefix_length=args.prefix_length,
         conjun_length=args.conjun_length,
         use_prompt_hint=args.use_prompt_hint,
+        # hyper params
+        hoi_dropout_weight=args.hoi_dropout_weight,
     )
 
     # Load pretrained CLIP weights

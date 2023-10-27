@@ -61,7 +61,8 @@ def get_args_parser():
                         help="number of [CONJUN] tokens between actions and objects")
     parser.add_argument('--use_prompt_hint', default=False, type=lambda x: (str(x).lower() == 'true'),
                         help='whether to use prompt hint in the text encoder')
-    
+    # hyper params
+    parser.add_argument('--hoi_dropout_weight', default=0.5, type=float)
     # * Bounding box head
     parser.add_argument('--enable_dec', action='store_true', help='enable decoders')
     parser.add_argument('--dec_heads', default=8, type=int,
