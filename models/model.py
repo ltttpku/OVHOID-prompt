@@ -736,6 +736,7 @@ def build_model(args):
         use_prompt_hint=args.use_prompt_hint,
         # hyper params
         hoi_dropout_weight=args.hoi_dropout_weight,
+        feature_map_dropout_weight=args.feature_map_dropout_weight,
     )
 
     # Load pretrained CLIP weights
