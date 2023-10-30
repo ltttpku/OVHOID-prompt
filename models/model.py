@@ -150,7 +150,7 @@ class HOIVisionTransformer(nn.Module):
         self.hoi_token_embed = nn.Parameter(scale * torch.randn(hoi_token_length, width))
         self.hoi_pos_embed = nn.Parameter(scale * torch.randn(hoi_token_length, width))
 
-        self.hoi_dropout = nn.Dropout(hoi_dropout_weight)
+        # self.hoi_dropout = nn.Dropout(hoi_dropout_weight)
         # Additional parameters for detection head
         self.enable_dec = enable_dec
         if enable_dec:
@@ -166,18 +166,19 @@ class HOIVisionTransformer(nn.Module):
 
         self.semantic_query = semantic_query
         if self.semantic_query:
-            decoder_layer = TransformerDecoderLayer(d_model=width, nhead=4, normalize_before=True)
-            decoder_norm = LayerNorm(width)
-            self.multi_region_attention = TransformerDecoder(decoder_layer, num_layers=2, norm=decoder_norm, return_intermediate=False)
-            self.region_aware_encoder_mask = region_aware_encoder_mask
-            # self.multi_region_attention = HOITransformer(width=768, layers=2, heads=4)
+            self.image_patch_pos2 = nn.Parameter(scale * torch.randn((self.image_resolution // self.patch_size) ** 2, width))
+            decoder_layer2 = TransformerDecoderLayer(d_model=width, nhead=4, normalize_before=True)
+            decoder_norm2 = LayerNorm(width)
+            # self.semantic_hoi_generator = TransformerDecoder(decoder_layer, num_layers=2, norm=decoder_norm, return_intermediate=False)
+            self.multi_region_attention = TransformerDecoder(decoder_layer2, num_layers=2, norm=decoder_norm2, return_intermediate=False)
+            # self.region_aware_encoder_mask = region_aware_encoder_mask
             if os.path.exists(semantic_units_file):
                 print("[INFO] load semantic units from", semantic_units_file)
                 self.semantic_units = pickle.load(open(semantic_units_file, "rb"))
                 if self.training:
                     self.semantic_units = self.semantic_units.float()
                 self.semantic_units = nn.Parameter(self.semantic_units, requires_grad=False)
-                self.semantic_units_mapping = nn.Parameter((output_dim ** -0.5) * torch.randn(width, output_dim))
+                self.semantic_units_mapping = nn.Linear(output_dim, width)
             else:
                 print("[WARNING] use random semantic units!!!")
                 self.semantic_units = nn.Parameter((width ** -0.5) * torch.randn(50, width))
@@ -191,6 +192,10 @@ class HOIVisionTransformer(nn.Module):
         for layer in self.bbox_embed.layers:
             nn.init.xavier_uniform_(layer.weight, gain=1)
             nn.init.constant_(layer.bias, 0)
+        
+        if self.semantic_query:
+            nn.init.xavier_uniform_(self.semantic_units_mapping.weight, gain=1)
+            nn.init.constant_(self.semantic_units_mapping.bias, 0)
 
     def interpolate_pos_embedding(self, x, mask):
         """ Using fixed positional embedding to handle the changing image resolution.
@@ -230,13 +235,20 @@ class HOIVisionTransformer(nn.Module):
     def forward(self, image: torch.Tensor, mask: torch.Tensor = None, prompt_hint: torch.Tensor = torch.zeros(0,768)):
         bs, num_of_grids, c = image.shape
         hoi = self.hoi_token_embed + torch.zeros(bs, self.hoi_token_length, c).type_as(image)
-        hoi = hoi + self.hoi_pos_embed
+        if not self.semantic_query: ## if use semantic query, add position embedding later
+            hoi = hoi + self.hoi_pos_embed
         hoi = self.ln_pre(hoi)
         hoi = hoi.permute(1, 0, 2)  # NLD -> LND
         image = image.permute(1, 0, 2)  # [*, width, grid ** 2]
         if self.semantic_query:
-            hoi = self.multi_region_attention(tgt=hoi, memory=image)[-1]
-            semantics = self.semantic_units @ self.semantic_units_mapping.T
+            patch_pos = self.image_patch_pos2.unsqueeze(0) + torch.zeros(bs, num_of_grids, c).type_as(image)
+            patch_pos = patch_pos.permute(1, 0, 2).type_as(image)
+            hoi = self.multi_region_attention(
+                tgt=hoi,
+                query_pos=self.hoi_pos_embed[:, None, :],
+                memory=image,
+                pos=patch_pos)[-1]
+            semantics = self.semantic_units_mapping(self.semantic_units)
             hoi = nn.Softmax(dim=-1)(hoi @ semantics.T) @ semantics
         image, hoi, attn_map = self.transformer(image, hoi, mask=None, prompt_hint=prompt_hint)
         image = image.permute(1, 0, 2)  # LND -> NLD
@@ -279,7 +291,6 @@ class HOIVisionTransformer(nn.Module):
         # Map to joint vision-and-text feature space
         # image_features = self.ln_post(image[:, 0, :])
         hoi_features = self.ln_post(hoi)
-        hoi_features = self.hoi_dropout(hoi_features)
         # image_features = image_features @ self.proj
         hoi_features = hoi_features @ self.proj
         # import pdb; pdb.set_trace()
@@ -433,7 +444,7 @@ class HOIDetector(nn.Module):
             ("proj_fc2", nn.Linear(vision_width, vision_width))
         ]))
         self.use_prompt_hint = use_prompt_hint
-        self.feature_map_dropout = nn.Dropout(feature_map_dropout_weight)
+        # self.feature_map_dropout = nn.Dropout(feature_map_dropout_weight)
         self.initialize_parameters()
 
     def initialize_parameters(self):
@@ -569,7 +580,7 @@ class HOIDetector(nn.Module):
         if self.multi_scale:
             vision_output_lst = []
             for idx in range(len(feature_maps)):
-                cur_feature_map = self.feature_map_dropout(feature_maps[idx])
+                cur_feature_map = feature_maps[idx]
                 vision_output = self.hoi_visual_decoder(image=cur_feature_map, mask=decoder_mask, prompt_hint=prompt_hint)
                 vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / (len(feature_maps)-1)
                 vision_output_lst.append(vision_output)
