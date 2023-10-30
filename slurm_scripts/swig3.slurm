@@ -33,14 +33,14 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2995 --use_env main.py \
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2994 --use_env main.py \
     --batch_size 64 \
-    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5 \
-    --epochs 150 \
+    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_prefix16 \
+    --epochs 130 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 10 \
     --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --prefix_length 16
 
 
 # ## Inference
