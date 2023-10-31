@@ -5,7 +5,7 @@
 #SBATCH --qos=lv0b
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
-#SBATCH --gres=gpu:2             # number of gpus per node
+#SBATCH --gres=gpu:1             # number of gpus per node
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=100G               # total memory (RAM) per node
 #SBATCH --time=0-24:00:00          # total run time limit (HH:MM:SS)
@@ -33,14 +33,15 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2991 --use_env main.py \
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
     --batch_size 64 \
-    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5 \
+    --output_dir checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_su50 \
     --epochs 130 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 10 \
     --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 \
+    --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl
 
 
 # ## Inference

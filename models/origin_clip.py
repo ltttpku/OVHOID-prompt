@@ -96,7 +96,7 @@ class VisionTransformer(nn.Module):
                 x = ResidualAttentionBlock(x)
                 if idx in f_idxs:
                     tmp_x = x.clone().permute(1, 0, 2)[:, 1:, :]
-                    tmp_x = tmp_x + self.hoi_mlp(self.hoi_ln(tmp_x))
+                    # tmp_x = tmp_x + self.hoi_mlp(self.hoi_ln(tmp_x))
                     feature_maps.append(tmp_x)
             return feature_maps
         

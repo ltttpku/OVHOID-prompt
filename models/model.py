@@ -82,8 +82,6 @@ class HOIResidualAttentionBlock(nn.Module):
         # [PROMPT + HOI] x [PROMPT + HOI], HOI sequential parsing
         hoi_length, bs, dim = hoi.shape
         x = torch.cat([hoi, prompt_hint.unsqueeze(1).repeat(1,bs,1)], dim=0)
-        if prompt_hint.shape[0] > 0:
-            import pdb; pdb.set_trace() # UPDATE "parse_attn_mask"!!!!
         x = x + self.dropout3(self.hoi_attention(self.hoi_ln1(x), attn_mask=self.parse_attn_mask[1:, 1:].to(hoi.device)))
         hoi = x[:hoi_length]
 
@@ -166,6 +164,8 @@ class HOIVisionTransformer(nn.Module):
 
         self.semantic_query = semantic_query
         if self.semantic_query:
+            self.dropout = nn.Dropout(0.1)
+            self.hoi_pos_embed2 = nn.Parameter(scale * torch.randn(hoi_token_length, width))
             self.image_patch_pos2 = nn.Parameter(scale * torch.randn((self.image_resolution // self.patch_size) ** 2, width))
             decoder_layer2 = TransformerDecoderLayer(d_model=width, nhead=4, normalize_before=True)
             decoder_norm2 = LayerNorm(width)
@@ -183,6 +183,13 @@ class HOIVisionTransformer(nn.Module):
                 print("[WARNING] use random semantic units!!!")
                 self.semantic_units = nn.Parameter((width ** -0.5) * torch.randn(50, width))
                 self.semantic_units_mapping = nn.Parameter((width ** -0.5) * torch.randn(50, width))
+        
+        self.hoi_mlp = nn.Sequential(OrderedDict([
+            ("fc1", nn.Linear(width, width*2)),
+            ("gelu", QuickGELU()),
+            ("fc2", nn.Linear(width*2, width))
+        ]))
+        self.hoi_ln = LayerNorm(width)
         self.initialize_parameters()
 
     def initialize_parameters(self):
@@ -245,11 +252,14 @@ class HOIVisionTransformer(nn.Module):
             patch_pos = patch_pos.permute(1, 0, 2).type_as(image)
             hoi = self.multi_region_attention(
                 tgt=hoi,
-                query_pos=self.hoi_pos_embed[:, None, :],
-                memory=image,
+                query_pos=self.hoi_pos_embed2[:, None, :],
+                memory=image, ## raw feature maps
                 pos=patch_pos)[-1]
             semantics = self.semantic_units_mapping(self.semantic_units)
-            hoi = nn.Softmax(dim=-1)(hoi @ semantics.T) @ semantics
+            semantic_hoi = nn.Softmax(dim=-1)(hoi @ semantics.T) @ semantics
+            hoi = hoi + self.dropout(self.hoi_ln(semantic_hoi))
+
+        image = image + self.hoi_mlp(self.hoi_ln(image))
         image, hoi, attn_map = self.transformer(image, hoi, mask=None, prompt_hint=prompt_hint)
         image = image.permute(1, 0, 2)  # LND -> NLD
         hoi = hoi.permute(1, 0, 2)  # LND -> NLD
