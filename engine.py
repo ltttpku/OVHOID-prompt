@@ -3,7 +3,7 @@
 """
 Train and eval functions used in main.py
 """
-import math
+import math, random
 import sys
 from typing import Iterable
 import torch, torchvision
@@ -18,7 +18,7 @@ _tokenizer = _Tokenizer()
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
-                    device: torch.device, epoch: int, max_norm: float = 0):
+                    device: torch.device, epoch: int, max_norm: float = 0, dataset_file: str = ""):
     model.train()
     criterion.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
@@ -27,9 +27,11 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     header = 'Epoch: [{}]'.format(epoch)
     print_freq = 10
 
+    hoi_descriptions = get_hoi_descriptions(dataset_name=dataset_file)
+    
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
         # import pdb; pdb.set_trace()
-        images, targets, texts = prepare_inputs(images, targets, data_loader, device)
+        images, targets, texts = prepare_inputs(images, targets, data_loader, device, hoi_descriptions)
         # images.tensors:torch.Size([8, 3, 320, 480]); images.mask: torch.Size([8, 320, 480])
         img_sizes = torch.stack([targets[z]['size'] for z in range(len(targets))], dim=0)
         outputs = model(images.tensors, texts, images.mask, img_sizes) # dict_keys(['logits_per_hoi', 'pred_boxes', 'box_scores', 'attn_maps', 'level_id'])
@@ -169,7 +171,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     return stats, evaluator
 
 
-def prepare_inputs(images, targets, data_loader, device):
+def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
     """Prepare model inputs."""
     # image inputs
     images = images.to(device)
@@ -192,13 +194,22 @@ def prepare_inputs(images, targets, data_loader, device):
             else:
                 unique_hois.add(hoi_id)
             action_text, object_text = hoi["text"]
+            
+            rate = random.uniform(0.5, 1)
+            cur_hoi_description = random.sample(hoi_descriptions[hoi["hoi_id"]], int(rate * len(hoi_descriptions[hoi["hoi_id"]])))
+            cur_hoi_description = " ".join(cur_hoi_description)
+
             action_token = _tokenizer.encode(action_text.replace("_", " "))
             object_token = _tokenizer.encode(object_text.replace("_", " "))
-
-            action_token = torch.as_tensor([sot_token] + action_token, dtype=torch.long).to(device)
-            object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
-            texts.append([action_token, object_token])
-            text_inputs.append(action_text + " " + object_text)
+            cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
+            
+            hoi_token = torch.as_tensor([sot_token] + action_token + object_token, dtype=torch.long).to(device)
+            cur_hoi_description_token = torch.as_tensor(cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
+            texts.append([hoi_token, cur_hoi_description_token])
+            # action_token = torch.as_tensor([sot_token] + action_token, dtype=torch.long).to(device)
+            # object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
+            # texts.append([action_token, object_token])
+            # text_inputs.append(action_text + " " + object_text)
 
     # [specific for HICO-DET], load related hois based on the targets in mini-batch
     if hasattr(data_loader.dataset, 'object_to_related_hois') and hasattr(data_loader.dataset, 'action_to_related_hois'):
@@ -305,6 +316,23 @@ def _get_model_analysis_input(data_loader):
         return inputs
 
 
+from datasets.swig_v1_categories import SWIG_ACTIONS, SWIG_CATEGORIES, SWIG_INTERACTIONS
+from datasets.hico_categories import HICO_INTERACTIONS
+
+def get_hoi_descriptions(dataset_name):
+    '''
+    return: Dict {hoi_id: List[hoi-description1, ...]}
+    '''
+    res = {}
+    if "swig" in dataset_name:
+        for hoi in SWIG_INTERACTIONS:
+            action_description = SWIG_ACTIONS[hoi["action_id"]]["def"]
+            object_description = SWIG_CATEGORIES[hoi["object_id"]]["def"]
+            res[hoi["id"]] = [f"Action: {action_description}", f"Object: {object_description}."]
+    else:
+        raise NotImplementedError
+    return res
+    
 ''' deprecated, text
 def prepare_inputs(images, targets, device):
     """Prepare model inputs."""
