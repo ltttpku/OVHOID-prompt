@@ -250,6 +250,7 @@ class HOIVisionTransformer(nn.Module):
         if self.semantic_query:
             patch_pos = self.image_patch_pos2.unsqueeze(0) + torch.zeros(bs, num_of_grids, c).type_as(image)
             patch_pos = patch_pos.permute(1, 0, 2).type_as(image)
+            import pdb; pdb.set_trace()
             hoi = self.multi_region_attention(
                 tgt=hoi,
                 query_pos=self.hoi_pos_embed2[:, None, :],
@@ -713,7 +714,7 @@ def convert_weights(model: nn.Module):
                     tensor.data = tensor.data.half()
 
         nnParams_modules = [
-            "text_projection", "proj", "hoi_prefix", "hoi_conjun", "hoi_pos_embed",
+            "text_projection", "proj", "hoi_prefix", "hoi_conjun", "hoi_pos_embed", "hoi_pos_embed2",
             "hoi_token_embed", "class_embedding", "positional_embedding", "vision_mlp", "semantic_units"]
         for name in nnParams_modules:
             if hasattr(l, name):
