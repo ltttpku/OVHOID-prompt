@@ -33,6 +33,21 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2994 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs1x64_lr8e-5_token10_ms5+8+11_cm5_su50 \
+    --epochs 130 \
+    --lr 8e-5 --min-lr 1e-7 \
+    --hoi_token_length 10 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 \
+    --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl
+
+
+# ## Inference
+# export MASTER_ADDR=localhost
+# export MASTER_PORT=5679
+
 # /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2994 --use_env main.py \
 #     --batch_size 64 \
 #     --output_dir checkpoints/swig_bs1x64_lr3e-4_token10_ms5+8+11_cm5_su50 \
@@ -41,86 +56,5 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 #     --hoi_token_length 10 \
 #     --enable_dec \
 #     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 \
-#     --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl
-
-
-# ## Inference
-export MASTER_ADDR=localhost
-export MASTER_PORT=5679
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2994 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr3e-4_token10_ms5+8+11_cm5_su50 \
-    --epochs 130 \
-    --lr 3e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 \
-    --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_su100/checkpoint0060.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2994 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr3e-4_token10_ms5+8+11_cm5_su50 \
-    --epochs 130 \
-    --lr 3e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 \
-    --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_su100/checkpoint0070.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2994 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr3e-4_token10_ms5+8+11_cm5_su50 \
-    --epochs 130 \
-    --lr 3e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 \
-    --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_su100/checkpoint0080.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2994 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr3e-4_token10_ms5+8+11_cm5_su50 \
-    --epochs 130 \
-    --lr 3e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 \
-    --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_su100/checkpoint0090.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2994 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr3e-4_token10_ms5+8+11_cm5_su50 \
-    --epochs 130 \
-    --lr 3e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 \
-    --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_su100/checkpoint0100.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2994 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr3e-4_token10_ms5+8+11_cm5_su50 \
-    --epochs 130 \
-    --lr 3e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 \
-    --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_su100/checkpoint0110.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2994 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr3e-4_token10_ms5+8+11_cm5_su50 \
-    --epochs 130 \
-    --lr 3e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 \
-    --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_su100/checkpoint0120.pth
+#     --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl --eval --test_score_thresh 1e-4 \
+#     --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_su100/checkpoint0060.pth
