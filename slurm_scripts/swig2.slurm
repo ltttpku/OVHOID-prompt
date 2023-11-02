@@ -33,26 +33,28 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2990 --use_env main.py \
     --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5 \
+    --output_dir checkpoints/swig_bs1x64_lr1e-4_token10_vit14 \
     --epochs 130 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 10 \
     --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5
+    --dataset_file swig \
+    --clip_model ViT-L/14 --embed_dim 768 --vision_patch_size 14 --vision_layers 24 --vision_width 1024 --transformer_width 768
 
 
 # ## Inference
 # export MASTER_ADDR=localhost
 # export MASTER_PORT=5679
 
-# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
+# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2990 --use_env main.py \
 #     --batch_size 64 \
-#     --output_dir checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5 \
+#     --output_dir checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_su50 \
 #     --epochs 130 \
 #     --lr 1e-4 --min-lr 1e-7 \
 #     --hoi_token_length 10 \
 #     --enable_dec \
-#     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --eval --test_score_thresh 1e-4 \
-#     --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5/checkpoint0060.pth
+#     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 \
+#     --semantic_query true --semantic_units_file semantic_units_files/su_word_50.pkl --eval --test_score_thresh 1e-4 \
+#     --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_su50/checkpoint0060.pth

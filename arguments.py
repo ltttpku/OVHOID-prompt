@@ -20,15 +20,15 @@ def get_args_parser():
     # parser.add_argument('--frozen_weights', type=str, default=None,)
     # * Vision
     parser.add_argument('--embed_dim', default=512, type=int,
-                        help="Size of the embeddings (dimension of the transformer)")
+                        help="Size of the embeddings (dimension of the transformer)") # 768
     parser.add_argument('--image_resolution', default=224, type=int,
                         help="input image resolution to the vision transformer")
     parser.add_argument('--vision_layers', default=12, type=int,
                         help="number of layers in vision transformer")
     parser.add_argument('--vision_width', default=768, type=int,
-                        help="feature channels in vision transformer")
+                        help="feature channels in vision transformer") # 1024
     parser.add_argument('--vision_patch_size', default=16, type=int,
-                        help="patch size: the input image is divided into multiple patches")
+                        help="patch size: the input image is divided into multiple patches") # 14
     parser.add_argument('--hoi_token_length', default=5, type=int,
                         help="number of [HOI] tokens added to transformer's input")
     parser.add_argument('--clip_preprocess', default=True, type=lambda x: (str(x).lower() == 'true'),
@@ -50,7 +50,7 @@ def get_args_parser():
     parser.add_argument('--vocab_size', default=49408, type=int,
                         help="Vocabulary size pre-trained with text encoder")
     parser.add_argument('--transformer_width', default=512, type=int,
-                        help="feature channels in text tranformer")
+                        help="feature channels in text tranformer")  # 768
     parser.add_argument('--transformer_heads', default=8, type=int,
                         help="number of multi-attention heads in text transformer")
     parser.add_argument('--transformer_layers', default=12, type=int,

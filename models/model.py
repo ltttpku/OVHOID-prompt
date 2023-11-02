@@ -26,6 +26,8 @@ _MODELS = {
     "RN50x16": "https://openaipublic.azureedge.net/clip/models/52378b407f34354e150460fe41077663dd5b39c54cd0bfd2b27167a4a06ec9aa/RN50x16.pt",
     "ViT-B/32": "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
     "ViT-B/16": "https://openaipublic.azureedge.net/clip/models/5806e77cd80f8b59890b7e101eabd078d9fb84e6937f9e85e4ecb61988df416f/ViT-B-16.pt",
+    "ViT-L/14": "https://openaipublic.azureedge.net/clip/models/b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836/ViT-L-14.pt",
+    "ViT-L/14@336px": "https://openaipublic.azureedge.net/clip/models/3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02/ViT-L-14-336px.pt",
 }
 
 
@@ -181,8 +183,8 @@ class HOIVisionTransformer(nn.Module):
                 self.semantic_units_mapping = nn.Linear(output_dim, width)
             else:
                 print("[WARNING] use random semantic units!!!")
-                self.semantic_units = nn.Parameter((width ** -0.5) * torch.randn(50, width))
-                self.semantic_units_mapping = nn.Parameter((width ** -0.5) * torch.randn(50, width))
+                self.semantic_units = nn.Parameter((width ** -0.5) * torch.randn(50, output_dim))
+                self.semantic_units_mapping = nn.Linear(output_dim, width)
         
         self.hoi_mlp = nn.Sequential(OrderedDict([
             ("fc1", nn.Linear(width, width*2)),
@@ -410,6 +412,8 @@ class HOIDetector(nn.Module):
         # self.vision_mlp = nn.Parameter((vision_width ** -0.5) * torch.randn(vision_width, vision_width))
         self.multi_scale = multi_scale
         self.f_idxs = f_idxs
+        self.input_resolution = image_resolution
+        self.vision_width = vision_width
 
         self.hoi_visual_decoder = HOIVisionTransformer(
             image_resolution=image_resolution,
@@ -575,15 +579,15 @@ class HOIDetector(nn.Module):
             prompt_hint = self.encode_text(text, pure_words=True)
             prompt_hint = self.promp_proj(prompt_hint)
         else:
-            prompt_hint = torch.zeros(0, 768).to(image.device)
+            prompt_hint = torch.zeros(0, self.vision_width).to(image.device)
         
         bs, c, h, w = image.shape
         if self.clip_preprocess:
-            resized_img = [torchvision.transforms.Resize([224,224])(image[i][:, :img_sizes[i,0], :img_sizes[i,1]]) for i in range(bs)]
+            resized_img = [torchvision.transforms.Resize([self.input_resolution,self.input_resolution])(image[i][:, :img_sizes[i,0], :img_sizes[i,1]]) for i in range(bs)]
             resized_img = torch.stack(resized_img, dim=0)
             decoder_mask = None
         else:
-            resized_img = torchvision.transforms.Resize([224,224])(image)
+            resized_img = torchvision.transforms.Resize([self.input_resolution,self.input_resolution])(image)
             raise NotImplementedError("undefined decoder_mask")
         # vision encoder
         feature_maps = self.encode_image(resized_img, self.multi_scale, self.f_idxs)
