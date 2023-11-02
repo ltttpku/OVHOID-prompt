@@ -81,9 +81,9 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
 
     # Build evaluator
     evaluator = build_evaluator(args)
-
+    hoi_descriptions = get_hoi_descriptions(dataset_name=args.dataset_file)
     # Convert all interaction categories into embeddings, only forward pass once!!
-    text_tokens = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device)
+    text_tokens = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device, hoi_descriptions)
     text_features = model.encode_text(text_tokens, pure_words=False)
     text_features /= text_features.norm(dim=-1, keepdim=True)
     if args.use_prompt_hint:
@@ -196,7 +196,8 @@ def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
             action_text, object_text = hoi["text"]
             
             rate = random.uniform(0.5, 1)
-            cur_hoi_description = random.sample(hoi_descriptions[hoi["hoi_id"]], int(rate * len(hoi_descriptions[hoi["hoi_id"]])))
+            hoi_name = " ".join(hoi["text"])
+            cur_hoi_description = random.sample(hoi_descriptions[hoi_name], int(rate * len(hoi_descriptions[hoi_name])))
             cur_hoi_description = " ".join(cur_hoi_description)
 
             action_token = _tokenizer.encode(action_text.replace("_", " "))
@@ -272,18 +273,35 @@ def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
 
 
 @torch.no_grad()
-def prepare_text_inputs(model, texts, device):
+def prepare_text_inputs(model, texts, device, hoi_descriptions):
     sot_token = _tokenizer.encoder["<|startoftext|>"]
     eot_token = _tokenizer.encoder["<|endoftext|>"]
 
     text_tokens = []
     for action_text, object_text in texts:
+        rate = 1.0
+        hoi_name = " ".join([action_text, object_text])
+        cur_hoi_description = random.sample(hoi_descriptions[hoi_name], int(rate * len(hoi_descriptions[hoi_name])))
+        cur_hoi_description = " ".join(cur_hoi_description)
+        cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
+        if len(cur_hoi_description_token)  >= 60:
+            cur_hoi_description = random.sample(hoi_descriptions[hoi_name], int(0.5 * len(hoi_descriptions[hoi_name])))
+            cur_hoi_description = " ".join(cur_hoi_description)
+            cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
+
         action_token = _tokenizer.encode(action_text.replace("_", " "))
         object_token = _tokenizer.encode(object_text.replace("_", " "))
 
-        action_token = torch.as_tensor([sot_token] + action_token, dtype=torch.long).to(device)
-        object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
-        text_tokens.append([action_token, object_token])
+        hoi_token = torch.as_tensor([sot_token] + action_token + object_token, dtype=torch.long).to(device)
+        cur_hoi_description_token = torch.as_tensor(cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
+        text_tokens.append([hoi_token, cur_hoi_description_token])
+
+        # action_token = _tokenizer.encode(action_text.replace("_", " "))
+        # object_token = _tokenizer.encode(object_text.replace("_", " "))
+
+        # action_token = torch.as_tensor([sot_token] + action_token, dtype=torch.long).to(device)
+        # object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
+        # text_tokens.append([action_token, object_token])
 
     # text_features = model.encode_text(text_tokens, pure_words)
     # text_features /= text_features.norm(dim=-1, keepdim=True)
@@ -328,7 +346,7 @@ def get_hoi_descriptions(dataset_name):
         for hoi in SWIG_INTERACTIONS:
             action_description = SWIG_ACTIONS[hoi["action_id"]]["def"]
             object_description = SWIG_CATEGORIES[hoi["object_id"]]["def"]
-            res[hoi["id"]] = [f"Action: {action_description}", f"Object: {object_description}."]
+            res[hoi["name"]] = [f"Action: {action_description}", f"Object: {object_description}."]
     else:
         raise NotImplementedError
     return res

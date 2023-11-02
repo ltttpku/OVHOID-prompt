@@ -555,6 +555,7 @@ class HOIDetector(nn.Module):
             for action_token, object_token in text:
                 remain_length = self.context_length - self.prefix_length - self.conjun_length - len(action_token) - len(object_token)
                 if remain_length < 0:
+                    import pdb; pdb.set_trace()
                     raise RuntimeError(f"Input text is too long for context length {self.context_length}")
                 eot_indices.append(self.context_length - remain_length - 1)
                 padding_zeros = torch.zeros(remain_length, dtype=torch.long).to(action_token.device)
