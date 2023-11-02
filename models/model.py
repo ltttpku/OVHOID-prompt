@@ -632,8 +632,10 @@ class HOIDetector(nn.Module):
             "pred_boxes": vision_outputs["pred_boxes"],
             "box_scores": vision_outputs["box_scores"],
             "attn_maps": vision_outputs["attn_maps"],
-            "level_id": vision_outputs["level_id"],
+            # "level_id": vision_outputs["level_id"],
         }
+        if "level_id" in vision_outputs:
+            return_dict.update({"level_id": vision_outputs["level_id"]})
         if "aux_outputs" in vision_outputs:
             return_dict.update({"aux_outputs": vision_outputs["aux_outputs"]})
 
