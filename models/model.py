@@ -604,7 +604,7 @@ class HOIDetector(nn.Module):
             for k in key_lst:
                 vision_outputs[k] = torch.cat([vision_output_lst[scale_i][k] for scale_i in range(len(vision_output_lst))], dim=1)
         else:
-            feature_maps = (1 - torch.tanh(self.gate_weight)) * feature_maps + torch.tanh(self.gate_weight) * self.vision_proj(feature_maps) # torch.Size([8, 196, 768])
+            feature_maps = self.vision_proj(feature_maps) # torch.Size([8, 196, 768])
             vision_outputs = self.hoi_visual_decoder(image=feature_maps, mask=decoder_mask, prompt_hint=prompt_hint)
         # import pdb; pdb.set_trace()
         # text encoder

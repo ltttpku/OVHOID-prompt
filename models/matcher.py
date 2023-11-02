@@ -117,10 +117,13 @@ class HungarianMatcher(nn.Module):
         cost_ogiou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox[:, 4:]), box_cxcywh_to_xyxy(tgt_bbox[:, 4:]))
         
         # Compute the level cost
-        tgt_bbox_scores = paired_box_to_score(tgt_bbox, type=self.hoi_type)
-        tgt_bbox_scores = tgt_bbox_scores.unsqueeze(1)
-        out_levels = outputs["level_id"].flatten(0, 1)
-        cost_level = torch.cdist(out_levels.float(), tgt_bbox_scores.float(), p=1)
+        if "level_id" in outputs.keys():
+            tgt_bbox_scores = paired_box_to_score(tgt_bbox, type=self.hoi_type)
+            tgt_bbox_scores = tgt_bbox_scores.unsqueeze(1)
+            out_levels = outputs["level_id"].flatten(0, 1)
+            cost_level = torch.cdist(out_levels.float(), tgt_bbox_scores.float(), p=1)
+        else:
+            cost_level = torch.zeros_like(cost_conf)
 
         # Final cost matrix
         C = self.cost_bbox * cost_pbbox + self.cost_bbox * cost_obbox + \

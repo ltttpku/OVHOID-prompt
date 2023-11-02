@@ -40,7 +40,7 @@ cd /scratch/generalvision/ting/OVHOID-prompt
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 10 \
     --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 11  \
+    --dataset_file swig \
     --clip_model ViT-L/14 --embed_dim 768 --vision_patch_size 14 --vision_layers 24 --vision_width 1024 --transformer_width 768
 
 
