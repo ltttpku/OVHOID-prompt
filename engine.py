@@ -112,7 +112,8 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         if model.multi_scale:
             vision_output_lst = []
             for idx in range(len(feature_maps)):
-                vision_output = model.hoi_visual_decoder(image=feature_maps[idx], mask=decoder_mask, prompt_hint=prompt_hint)
+                cur_feature_map = feature_maps[idx]
+                vision_output = model.hoi_visual_decoder(image=cur_feature_map, mask=decoder_mask, prompt_hint=prompt_hint)
                 vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / (len(feature_maps)-1)
                 vision_output_lst.append(vision_output)
             vision_outputs = {}
@@ -120,7 +121,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
             for k in key_lst:
                 vision_outputs[k] = torch.cat([vision_output_lst[scale_i][k] for scale_i in range(len(vision_output_lst))], dim=1)
         else:
-            feature_maps = (1 - torch.tanh(model.gate_weight)) * feature_maps + torch.tanh(model.gate_weight) * model.vision_proj(feature_maps) # torch.Size([8, 196, 768])
+            feature_maps = model.vision_proj(feature_maps) # torch.Size([8, 196, 768])
             vision_outputs = model.hoi_visual_decoder(image=feature_maps, mask=decoder_mask, prompt_hint=prompt_hint)
         
         hoi_features = vision_outputs['hoi_features']
