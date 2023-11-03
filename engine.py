@@ -90,7 +90,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         prompt_hint = model.encode_text(text_tokens, pure_words=True)
         prompt_hint = model.promp_proj(prompt_hint)
     else:
-        prompt_hint = torch.zeros(0, 768).to(device).half()
+        prompt_hint = torch.zeros(0, args.vision_width).to(device)
     
     # Inference
     for images, targets in metric_logger.log_every(data_loader, 10, header):
