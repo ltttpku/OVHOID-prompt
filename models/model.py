@@ -378,6 +378,7 @@ class HOIDetector(nn.Module):
         transformer_layers: int,
         prefix_length: int = 8,
         conjun_length: int = 4,
+        auxiliary_prefix_length: int = 8,
         use_prompt_hint: bool = False,
         # hyper params
         hoi_dropout_weight: float = 0.5,
@@ -447,11 +448,14 @@ class HOIDetector(nn.Module):
 
         self.text_projection = nn.Parameter(torch.empty(transformer_width, embed_dim))
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+        self.auxiliary_logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
         self.prefix_length = prefix_length
         self.conjun_length = conjun_length
+        self.auxiliary_prefix_length = auxiliary_prefix_length
         self.hoi_prefix = nn.Parameter(torch.empty(prefix_length, transformer_width))
         self.hoi_conjun = nn.Parameter(torch.empty(conjun_length, transformer_width))
+        self.auxiliary_hoi_prefix = nn.Parameter(torch.empty(auxiliary_prefix_length, transformer_width))
         self.promp_proj = nn.Sequential(OrderedDict([
             ("proj_fc1", nn.Linear(embed_dim, vision_width)),
             ("proj_gelu", QuickGELU()),
@@ -518,9 +522,12 @@ class HOIDetector(nn.Module):
     def encode_image(self, image, multi_scale=False, f_idxs=[]):
         return self.visual(image.type(self.dtype), multi_scale, f_idxs)
 
-    def encode_text(self, text, pure_words=False):
+    def encode_text(self, text, pure_words=False, is_auxiliary_text=False):
         # x = self.token_embedding(text).type(self.dtype)  # [batch_size, n_ctx, d_model]
-        x, eot_indices = self.text_to_embedding(text, pure_words)
+        if is_auxiliary_text:
+            x, eot_indices = self.auxiliary_texts_to_embedding(text)
+        else:
+            x, eot_indices = self.text_to_embedding(text, pure_words)
         x = x + self.positional_embedding.type(self.dtype)
         x = x.permute(1, 0, 2)  # NLD -> LND
         x = self.transformer(x)
@@ -533,6 +540,38 @@ class HOIDetector(nn.Module):
         x = x[torch.arange(x.shape[0]), eot_indices] @ self.text_projection
 
         return x
+
+    def auxiliary_texts_to_embedding(self, auxiliary_texts, pure_words=False):
+        """ text (List[List[Tensor]]): A list of action text tokens and object text tokens.
+            [
+                description text 1,
+                description text 2,
+                ...
+                description text n,
+            ]
+        """
+        all_token_embeddings = []
+        eot_indices = []
+
+        for description_token in auxiliary_texts:
+            remain_length = self.context_length - self.auxiliary_prefix_length - len(description_token)
+            if remain_length < 0:
+                description_token = description_token[:len(description_token)+remain_length]
+                remain_length = 0
+                print(f"[WARNING] Input text is too long for context length {self.context_length}")
+                # import pdb; pdb.set_trace()
+                # raise RuntimeError(f"Input text is too long for context length {self.context_length}")
+            eot_indices.append(self.context_length - remain_length - 1)
+            padding_zeros = torch.zeros(remain_length, dtype=torch.long).to(description_token.device)
+            token = torch.cat([description_token, padding_zeros])
+            token_embedding = self.token_embedding(token).type(self.dtype)
+            full_token_embedding = torch.cat([
+                token_embedding[0:1, :], self.auxiliary_hoi_prefix, token_embedding[1:, :]], dim=0)
+            all_token_embeddings.append(full_token_embedding)
+        
+        eot_indices = torch.as_tensor(eot_indices)
+        x = torch.stack(all_token_embeddings, dim=0)  # [batch_size, n_ctx, d_model]
+        return x, eot_indices
 
     def text_to_embedding(self, text, pure_words=False):
         """ text (List[List[Tensor]]): A list of action text tokens and object text tokens.
@@ -574,7 +613,7 @@ class HOIDetector(nn.Module):
         x = torch.stack(all_token_embeddings, dim=0)  # [batch_size, n_ctx, d_model]
         return x, eot_indices
 
-    def forward(self, image, text, image_mask, img_sizes):
+    def forward(self, image, text, image_mask, img_sizes, auxiliary_texts):
         if self.use_prompt_hint:
             prompt_hint = self.encode_text(text, pure_words=True)
             prompt_hint = self.promp_proj(prompt_hint)
@@ -609,6 +648,7 @@ class HOIDetector(nn.Module):
         # import pdb; pdb.set_trace()
         # text encoder
         text_features = self.encode_text(text)
+        auxiliary_text_features = self.encode_text(auxiliary_texts, is_auxiliary_text=True)
 
         # normalized features
         # image_features = vision_outputs["image_features"]
@@ -616,14 +656,16 @@ class HOIDetector(nn.Module):
         hoi_features = vision_outputs["hoi_features"]
         hoi_features = hoi_features / hoi_features.norm(dim=-1, keepdim=True)
         text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+        auxiliary_text_features = auxiliary_text_features / auxiliary_text_features.norm(dim=-1, keepdim=True)
 
         # [image level] cosine similarity as logits
         logit_scale = self.logit_scale.exp()
+        auxiliary_logit_scale = self.auxiliary_logit_scale.exp()
         # logits_per_image = logit_scale * image_features @ text_features.t()
         # logits_per_text = logits_per_image.t()
 
         # [hoi level] cosine similarity between hoi_features and text_features
-        logits_per_hoi = logit_scale * hoi_features @ text_features.t()
+        logits_per_hoi = logit_scale * hoi_features @ text_features.t() + auxiliary_logit_scale * hoi_features @ auxiliary_text_features.t()
 
         return_dict = {
             # "logits_per_image": logits_per_image,
@@ -720,7 +762,7 @@ def convert_weights(model: nn.Module):
                     tensor.data = tensor.data.half()
 
         nnParams_modules = [
-            "text_projection", "proj", "hoi_prefix", "hoi_conjun", "hoi_pos_embed", "hoi_pos_embed2",
+            "text_projection", "proj", "hoi_prefix", "hoi_conjun", "auxiliary_hoi_prefix", "hoi_pos_embed", "hoi_pos_embed2",
             "hoi_token_embed", "class_embedding", "positional_embedding", "vision_mlp", "semantic_units"]
         for name in nnParams_modules:
             if hasattr(l, name):

@@ -31,10 +31,10 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
         # import pdb; pdb.set_trace()
-        images, targets, texts = prepare_inputs(images, targets, data_loader, device, hoi_descriptions)
+        images, targets, texts, auxiliary_texts = prepare_inputs(images, targets, data_loader, device, hoi_descriptions)
         # images.tensors:torch.Size([8, 3, 320, 480]); images.mask: torch.Size([8, 320, 480])
         img_sizes = torch.stack([targets[z]['size'] for z in range(len(targets))], dim=0)
-        outputs = model(images.tensors, texts, images.mask, img_sizes) # dict_keys(['logits_per_hoi', 'pred_boxes', 'box_scores', 'attn_maps', 'level_id'])
+        outputs = model(images.tensors, texts, images.mask, img_sizes, auxiliary_texts) # dict_keys(['logits_per_hoi', 'pred_boxes', 'box_scores', 'attn_maps', 'level_id'])
         loss_dict, indices = criterion(outputs, targets)
         weight_dict = criterion.weight_dict
         losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
@@ -135,8 +135,11 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
                    "box_scores": box_scores,
                 #    "aux_outputs": vision_outputs["aux_outputs"],
                    "attn_maps": vision_outputs['attn_maps'],
-                   "level_id": vision_outputs["level_id"],}
-
+                #    "level_id": vision_outputs["level_id"],
+                   }
+        if "level_id" in vision_outputs:
+            outputs.update({"level_id": vision_outputs["level_id"]})
+        
         loss_dict, indices = criterion(outputs, targets)
         weight_dict = criterion.weight_dict
 
@@ -183,6 +186,7 @@ def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
     eot_token = _tokenizer.encoder["<|endoftext|>"]
 
     texts = []
+    auxiliary_texts = []
     text_inputs = []
     unique_hois = set()
 
@@ -196,22 +200,21 @@ def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
                 unique_hois.add(hoi_id)
             action_text, object_text = hoi["text"]
             
-            rate = random.uniform(0.5, 1)
             hoi_name = " ".join(hoi["text"])
-            cur_hoi_description = random.sample(hoi_descriptions[hoi_name], int(rate * len(hoi_descriptions[hoi_name])))
+            cur_hoi_description = random.sample(hoi_descriptions[hoi_name], len(hoi_descriptions[hoi_name]))
             cur_hoi_description = " ".join(cur_hoi_description)
 
             action_token = _tokenizer.encode(action_text.replace("_", " "))
             object_token = _tokenizer.encode(object_text.replace("_", " "))
+
             cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
-            
-            hoi_token = torch.as_tensor([sot_token] + action_token + object_token, dtype=torch.long).to(device)
-            cur_hoi_description_token = torch.as_tensor(cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
-            texts.append([hoi_token, cur_hoi_description_token])
-            # action_token = torch.as_tensor([sot_token] + action_token, dtype=torch.long).to(device)
-            # object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
-            # texts.append([action_token, object_token])
-            # text_inputs.append(action_text + " " + object_text)
+            cur_hoi_description_token = torch.as_tensor([sot_token] + cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
+            auxiliary_texts.append(cur_hoi_description_token)
+
+            action_token = torch.as_tensor([sot_token] + action_token, dtype=torch.long).to(device)
+            object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
+            texts.append([action_token, object_token])
+            text_inputs.append(action_text + " " + object_text)
 
     # [specific for HICO-DET], load related hois based on the targets in mini-batch
     if hasattr(data_loader.dataset, 'object_to_related_hois') and hasattr(data_loader.dataset, 'action_to_related_hois'):
@@ -270,7 +273,7 @@ def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
                     related_text_inputs.append(action_text + " " + object_text)
         texts.extend(related_texts)
 
-    return images, targets, texts
+    return images, targets, texts, auxiliary_texts
 
 
 @torch.no_grad()
@@ -337,6 +340,7 @@ def _get_model_analysis_input(data_loader):
 
 from datasets.swig_v1_categories import SWIG_ACTIONS, SWIG_CATEGORIES, SWIG_INTERACTIONS
 from datasets.hico_categories import HICO_INTERACTIONS
+import json
 
 def get_hoi_descriptions(dataset_name):
     '''
@@ -344,10 +348,13 @@ def get_hoi_descriptions(dataset_name):
     '''
     res = {}
     if "swig" in dataset_name:
+        with open("swig_hoi_descriptions.json", "r") as f:
+            swig_hoi_descriptions = json.load(f)
         for hoi in SWIG_INTERACTIONS:
-            action_description = SWIG_ACTIONS[hoi["action_id"]]["def"]
-            object_description = SWIG_CATEGORIES[hoi["object_id"]]["def"]
-            res[hoi["name"]] = [f"Action: {action_description}", f"Object: {object_description}."]
+            # action_description = SWIG_ACTIONS[hoi["action_id"]]["def"]
+            # object_description = SWIG_CATEGORIES[hoi["object_id"]]["def"]
+            # res[hoi["name"]] = [f"Action: {action_description}", f"Object: {object_description}."]
+            res[hoi["name"]] = swig_hoi_descriptions[hoi["name"]]
     else:
         raise NotImplementedError
     return res
