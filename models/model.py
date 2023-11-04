@@ -377,7 +377,7 @@ class HOIDetector(nn.Module):
         transformer_layers: int,
         prefix_length: int = 8,
         conjun_length: int = 4,
-        auxiliary_prefix_length: int = 0,
+        auxiliary_prefix_length: int = 4,
         use_prompt_hint: bool = False,
         # hyper params
         hoi_dropout_weight: float = 0.5,
