@@ -83,9 +83,11 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     evaluator = build_evaluator(args)
     hoi_descriptions = get_hoi_descriptions(dataset_name=args.dataset_file)
     # Convert all interaction categories into embeddings, only forward pass once!!
-    text_tokens = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device, hoi_descriptions)
+    text_tokens, auxiliary_texts = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device, hoi_descriptions)
     text_features = model.encode_text(text_tokens, pure_words=False)
     text_features /= text_features.norm(dim=-1, keepdim=True)
+    auxiliary_text_features = model.encode_text(auxiliary_texts, is_auxiliary_text=True)
+    auxiliary_text_features /= auxiliary_text_features.norm(dim=-1, keepdim=True)
     if args.use_prompt_hint:
         prompt_hint = model.encode_text(text_tokens, pure_words=True)
         prompt_hint = model.promp_proj(prompt_hint)
@@ -126,7 +128,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         
         hoi_features = vision_outputs['hoi_features']
         hoi_features = hoi_features / hoi_features.norm(dim=-1, keepdim=True)
-        logits_per_hoi = model.logit_scale.exp() * hoi_features @ text_features.t()
+        logits_per_hoi = model.logit_scale.exp() * hoi_features @ text_features.t() +  model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
 
@@ -203,18 +205,18 @@ def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
             hoi_name = " ".join(hoi["text"])
             cur_hoi_description = random.sample(hoi_descriptions[hoi_name], len(hoi_descriptions[hoi_name]))
             cur_hoi_description = " ".join(cur_hoi_description)
-
-            action_token = _tokenizer.encode(action_text.replace("_", " "))
-            object_token = _tokenizer.encode(object_text.replace("_", " "))
-
             cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
             cur_hoi_description_token = torch.as_tensor([sot_token] + cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
             auxiliary_texts.append(cur_hoi_description_token)
 
+            ## <action, object>
+            action_token = _tokenizer.encode(action_text.replace("_", " "))
+            object_token = _tokenizer.encode(object_text.replace("_", " "))
+
             action_token = torch.as_tensor([sot_token] + action_token, dtype=torch.long).to(device)
             object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
             texts.append([action_token, object_token])
-            text_inputs.append(action_text + " " + object_text)
+            # text_inputs.append(action_text + " " + object_text)
 
     # [specific for HICO-DET], load related hois based on the targets in mini-batch
     if hasattr(data_loader.dataset, 'object_to_related_hois') and hasattr(data_loader.dataset, 'action_to_related_hois'):
@@ -282,23 +284,21 @@ def prepare_text_inputs(model, texts, device, hoi_descriptions):
     eot_token = _tokenizer.encoder["<|endoftext|>"]
 
     text_tokens = []
+    auxiliary_texts = []
     for action_text, object_text in texts:
-        rate = 1.0
         hoi_name = " ".join([action_text, object_text])
-        cur_hoi_description = random.sample(hoi_descriptions[hoi_name], int(rate * len(hoi_descriptions[hoi_name])))
+        cur_hoi_description = random.sample(hoi_descriptions[hoi_name], len(hoi_descriptions[hoi_name]))
         cur_hoi_description = " ".join(cur_hoi_description)
         cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
-        if len(cur_hoi_description_token)  >= 60:
-            cur_hoi_description = random.sample(hoi_descriptions[hoi_name], int(0.5 * len(hoi_descriptions[hoi_name])))
-            cur_hoi_description = " ".join(cur_hoi_description)
-            cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
+        cur_hoi_description_token = torch.as_tensor([sot_token] + cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
+        auxiliary_texts.append(cur_hoi_description_token)
 
+        ## <action, object>
         action_token = _tokenizer.encode(action_text.replace("_", " "))
         object_token = _tokenizer.encode(object_text.replace("_", " "))
-
-        hoi_token = torch.as_tensor([sot_token] + action_token + object_token, dtype=torch.long).to(device)
-        cur_hoi_description_token = torch.as_tensor(cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
-        text_tokens.append([hoi_token, cur_hoi_description_token])
+        action_token = torch.as_tensor([sot_token] + action_token, dtype=torch.long).to(device)
+        object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
+        text_tokens.append([action_token, object_token])
 
         # action_token = _tokenizer.encode(action_text.replace("_", " "))
         # object_token = _tokenizer.encode(object_text.replace("_", " "))
@@ -309,7 +309,7 @@ def prepare_text_inputs(model, texts, device, hoi_descriptions):
 
     # text_features = model.encode_text(text_tokens, pure_words)
     # text_features /= text_features.norm(dim=-1, keepdim=True)
-    return text_tokens
+    return text_tokens, auxiliary_texts
 
 
 def get_flop_stats(model, data_loader):
