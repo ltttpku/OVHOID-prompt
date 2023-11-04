@@ -30,7 +30,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     hoi_descriptions = get_hoi_descriptions(dataset_name=dataset_file)
     
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
-        # import pdb; pdb.set_trace()
         images, targets, texts, auxiliary_texts = prepare_inputs(images, targets, data_loader, device, hoi_descriptions)
         # images.tensors:torch.Size([8, 3, 320, 480]); images.mask: torch.Size([8, 320, 480])
         img_sizes = torch.stack([targets[z]['size'] for z in range(len(targets))], dim=0)
@@ -141,7 +140,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
                    }
         if "level_id" in vision_outputs:
             outputs.update({"level_id": vision_outputs["level_id"]})
-        import pdb; pdb.set_trace()
+        
         loss_dict, indices = criterion(outputs, targets)
         weight_dict = criterion.weight_dict
 
@@ -156,7 +155,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         loss_dict_reduced_unscaled = {f'{k}_unscaled': v for k, v in loss_dict_reduced.items()}
         metric_logger.update(loss=sum(loss_dict_reduced_scaled.values()), **loss_dict_reduced_scaled, **loss_dict_reduced_unscaled)
         metric_logger.update(class_error=loss_dict_reduced['class_error'])
-        # import pdb; pdb.set_trace()
+        
         results = {int(targets[i]['image_id']): postprocessors(
             {'pred_logits': logits_per_hoi[i], 'pred_boxes': pred_boxes[i], 'box_scores': box_scores[i]},
             targets[i]['orig_size'],

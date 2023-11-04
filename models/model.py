@@ -305,7 +305,6 @@ class HOIVisionTransformer(nn.Module):
         hoi_features = self.ln_post(hoi)
         # image_features = image_features @ self.proj
         hoi_features = hoi_features @ self.proj
-        # import pdb; pdb.set_trace()
         # Bounding box head
         if self.enable_dec:
             # patch_pos = self.image_patch_pos(mask) # sin/cos pos embedding for bbox decoding
@@ -483,7 +482,7 @@ class HOIDetector(nn.Module):
 
         nn.init.normal_(self.hoi_prefix, std=0.01)
         nn.init.normal_(self.hoi_conjun, std=0.01)
-        # import pdb; pdb.set_trace()
+        
         nn.init.normal_(self.promp_proj.proj_fc1.weight, std=0.01)
         nn.init.normal_(self.promp_proj.proj_fc2.weight, std=0.01)
         # nn.init.xavier_normal_(self.promp_proj.proj_fc2.weight)
@@ -533,7 +532,7 @@ class HOIDetector(nn.Module):
         x = self.transformer(x)
         x = x.permute(1, 0, 2)  # LND -> NLD
         x = self.ln_final(x).type(self.dtype)
-        import pdb; pdb.set_trace()
+
         # x.shape = [batch_size, n_ctx, transformer.width]
         # take features from the eot embedding (eot_token is the highest number in each sequence)
         # x = x[torch.arange(x.shape[0]), text.argmax(dim=-1)] @ self.text_projection
@@ -597,7 +596,6 @@ class HOIDetector(nn.Module):
             for action_token, object_token in text:
                 remain_length = self.context_length - self.prefix_length - self.conjun_length - len(action_token) - len(object_token)
                 if remain_length < 0:
-                    import pdb; pdb.set_trace()
                     raise RuntimeError(f"Input text is too long for context length {self.context_length}")
                 eot_indices.append(self.context_length - remain_length - 1)
                 padding_zeros = torch.zeros(remain_length, dtype=torch.long).to(action_token.device)
