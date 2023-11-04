@@ -127,7 +127,8 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         
         hoi_features = vision_outputs['hoi_features']
         hoi_features = hoi_features / hoi_features.norm(dim=-1, keepdim=True)
-        logits_per_hoi = model.logit_scale.exp() * hoi_features @ hoi_features.t() +  model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
+        logits_per_hoi = model.logit_scale.exp() * hoi_features @ text_features.t() + \
+            model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
 
@@ -202,8 +203,8 @@ def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
             action_text, object_text = hoi["text"]
             
             hoi_name = " ".join(hoi["text"])
-            cur_hoi_description = random.sample(hoi_descriptions[hoi_name], len(hoi_descriptions[hoi_name]))
-            cur_hoi_description = " ".join(cur_hoi_description)
+            # cur_hoi_description = random.sample(hoi_descriptions[hoi_name], len(hoi_descriptions[hoi_name]))
+            cur_hoi_description = " ".join(hoi_descriptions[hoi_name])
             cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
             cur_hoi_description_token = torch.as_tensor([sot_token] + cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
             auxiliary_texts.append(cur_hoi_description_token)
@@ -286,8 +287,8 @@ def prepare_text_inputs(model, texts, device, hoi_descriptions):
     auxiliary_texts = []
     for action_text, object_text in texts:
         hoi_name = " ".join([action_text, object_text])
-        cur_hoi_description = random.sample(hoi_descriptions[hoi_name], len(hoi_descriptions[hoi_name]))
-        cur_hoi_description = " ".join(cur_hoi_description)
+        # cur_hoi_description = random.sample(hoi_descriptions[hoi_name], len(hoi_descriptions[hoi_name]))
+        cur_hoi_description = " ".join(hoi_descriptions[hoi_name])
         cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
         cur_hoi_description_token = torch.as_tensor([sot_token] + cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
         auxiliary_texts.append(cur_hoi_description_token)
