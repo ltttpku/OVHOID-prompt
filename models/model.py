@@ -378,7 +378,7 @@ class HOIDetector(nn.Module):
         transformer_layers: int,
         prefix_length: int = 8,
         conjun_length: int = 4,
-        auxiliary_prefix_length: int = 8,
+        auxiliary_prefix_length: int = 0,
         use_prompt_hint: bool = False,
         # hyper params
         hoi_dropout_weight: float = 0.5,
@@ -533,7 +533,7 @@ class HOIDetector(nn.Module):
         x = self.transformer(x)
         x = x.permute(1, 0, 2)  # LND -> NLD
         x = self.ln_final(x).type(self.dtype)
-
+        import pdb; pdb.set_trace()
         # x.shape = [batch_size, n_ctx, transformer.width]
         # take features from the eot embedding (eot_token is the highest number in each sequence)
         # x = x[torch.arange(x.shape[0]), text.argmax(dim=-1)] @ self.text_projection
@@ -559,7 +559,6 @@ class HOIDetector(nn.Module):
                 description_token = description_token[:len(description_token)+remain_length]
                 remain_length = 0
                 print(f"[WARNING] Input text is too long for context length {self.context_length}")
-                # import pdb; pdb.set_trace()
                 # raise RuntimeError(f"Input text is too long for context length {self.context_length}")
             eot_indices.append(self.context_length - remain_length - 1)
             padding_zeros = torch.zeros(remain_length, dtype=torch.long).to(description_token.device)

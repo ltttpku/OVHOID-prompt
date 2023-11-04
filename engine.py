@@ -128,7 +128,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         
         hoi_features = vision_outputs['hoi_features']
         hoi_features = hoi_features / hoi_features.norm(dim=-1, keepdim=True)
-        logits_per_hoi = model.logit_scale.exp() * hoi_features @ text_features.t() +  model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
+        logits_per_hoi = model.logit_scale.exp() * hoi_features @ hoi_features.t() +  model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
 
@@ -141,7 +141,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
                    }
         if "level_id" in vision_outputs:
             outputs.update({"level_id": vision_outputs["level_id"]})
-        
+        import pdb; pdb.set_trace()
         loss_dict, indices = criterion(outputs, targets)
         weight_dict = criterion.weight_dict
 
