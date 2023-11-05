@@ -141,10 +141,6 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
             aux_text_logits[:,:,rare_hois] = aux_text_logits[:,:,rare_hois] * args.aux_text_weight_rare
             aux_text_logits[:,:,nonrare_hois] = aux_text_logits[:,:,nonrare_hois] * args.aux_text_weight_nonrare
 
-            logits_per_hoi[:,:,zero_hois] = logits_per_hoi[:,:,zero_hois] * (1 - args.aux_text_weight_zero)
-            logits_per_hoi[:,:,rare_hois] = logits_per_hoi[:,:,rare_hois] * (1 - args.aux_text_weight_rare)
-            logits_per_hoi[:,:,nonrare_hois] = logits_per_hoi[:,:,nonrare_hois] * (1 - args.aux_text_weight_nonrare)
-
             logits_per_hoi = logits_per_hoi + aux_text_logits
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
