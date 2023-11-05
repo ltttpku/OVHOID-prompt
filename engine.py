@@ -94,6 +94,10 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     else:
         prompt_hint = torch.zeros(0, args.vision_width).half().to(device)
     
+    reversed_hoi_mapper = dict((v, k) for k, v in data_loader.dataset.text_mapper.items())
+    zero_hois = torch.as_tensor([reversed_hoi_mapper[x["id"]] for x in SWIG_INTERACTIONS if x["frequency"] == 0 and x["evaluation"] == 1]).to(device)
+    rare_hois = torch.as_tensor([reversed_hoi_mapper[x["id"]] for x in SWIG_INTERACTIONS if x["frequency"] == 1 and x["evaluation"] == 1]).to(device)
+    nonrare_hois = torch.as_tensor([reversed_hoi_mapper[x["id"]] for x in SWIG_INTERACTIONS if x["frequency"] == 2 and x["evaluation"] == 1]).to(device)
     # Inference
     for images, targets in metric_logger.log_every(data_loader, 10, header):
         images = images.to(device)
@@ -129,10 +133,14 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         hoi_features = vision_outputs['hoi_features']
         hoi_features = hoi_features / hoi_features.norm(dim=-1, keepdim=True)
         logits_per_hoi = model.logit_scale.exp() * hoi_features @ text_features.t()
+
         if args.use_aux_text:
             aux_text_logits = model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
             # aux_text_logits = ((-1) * (args.best_beta - args.best_beta * aux_text_logits)).exp()
-            logits_per_hoi = logits_per_hoi + args.aux_text_weight * aux_text_logits
+            aux_text_logits[:,:,zero_hois] = aux_text_logits[:,:,zero_hois] * torch.as_tensor(args.aux_text_weight_zero).to(device)
+            aux_text_logits[:,:,rare_hois] = aux_text_logits[:,:,rare_hois] * torch.as_tensor(args.aux_text_weight_rare).to(device)
+            aux_text_logits[:,:,nonrare_hois] = aux_text_logits[:,:,nonrare_hois] * torch.as_tensor(args.aux_text_weight_nonrare).to(device)
+            logits_per_hoi = logits_per_hoi + aux_text_logits
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
         

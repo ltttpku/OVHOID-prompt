@@ -130,6 +130,9 @@ def get_args_parser():
     parser.add_argument('--aux_text_weight', default=1.0, type=float)
     parser.add_argument('--enable_softmax', action='store_true')
     parser.add_argument('--best_beta', default=1.0, type=float)
+    parser.add_argument('--aux_text_weight_nonrare', default=1.0, type=float)
+    parser.add_argument('--aux_text_weight_rare', default=1.0, type=float)
+    parser.add_argument('--aux_text_weight_zero', default=1.0, type=float)
     # Training setup
     parser.add_argument('--eval', action='store_true')
     parser.add_argument('--seed', default=22, type=int)
