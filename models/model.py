@@ -694,8 +694,9 @@ class HOIDetector(nn.Module):
 
 class PostProcess(object):
     """ This module converts the model's output into the format expected by the coco api"""
-    def __init__(self, score_threshold):
+    def __init__(self, score_threshold, bbox_lambda=1):
         self.score_threshold = score_threshold
+        self.bbox_lambda = bbox_lambda
 
     def __call__(self, outputs, original_size, hoi_mapper):
         """ Perform the computation
@@ -719,7 +720,7 @@ class PostProcess(object):
 
         hoi_scores = outputs['pred_logits'].softmax(dim=-1)
         box_scores = outputs['box_scores'].sigmoid()
-        scores = hoi_scores * box_scores
+        scores = hoi_scores * (box_scores ** self.bbox_lambda)
 
         # Filter out low confident ones
         keep = torch.nonzero(scores > self.score_threshold, as_tuple=True)
@@ -864,6 +865,6 @@ def build_model(args):
     criterion.to(device)
 
     # Postprocessor for inference
-    postprocessors = PostProcess(args.test_score_thresh)
+    postprocessors = PostProcess(args.test_score_thresh, args.bbox_lambda)
 
     return model, criterion, postprocessors
