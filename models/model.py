@@ -361,8 +361,10 @@ class HOIDetector(nn.Module):
         clip_preprocess: bool,
         vision_decoder_layers: int,
         vision_decoder_heads: int,
+        ## multi-level
         multi_scale: bool,
         f_idxs : list,
+        ## semantic query
         semantic_query: bool,
         semantic_units_file: str,
         # detection head
@@ -377,6 +379,8 @@ class HOIDetector(nn.Module):
         transformer_layers: int,
         prefix_length: int = 8,
         conjun_length: int = 4,
+        ## use_aux_text
+        use_aux_text: bool = False,
         auxiliary_prefix_length: int = 4,
         use_prompt_hint: bool = False,
         # hyper params
@@ -451,10 +455,12 @@ class HOIDetector(nn.Module):
 
         self.prefix_length = prefix_length
         self.conjun_length = conjun_length
+        self.use_aux_text = use_aux_text
         self.auxiliary_prefix_length = auxiliary_prefix_length
         self.hoi_prefix = nn.Parameter(torch.empty(prefix_length, transformer_width))
         self.hoi_conjun = nn.Parameter(torch.empty(conjun_length, transformer_width))
-        self.auxiliary_hoi_prefix = nn.Parameter(torch.empty(auxiliary_prefix_length, transformer_width))
+        if auxiliary_prefix_length > 0:
+            self.auxiliary_hoi_prefix = nn.Parameter(torch.empty(auxiliary_prefix_length, transformer_width))
         self.promp_proj = nn.Sequential(OrderedDict([
             ("proj_fc1", nn.Linear(embed_dim, vision_width)),
             ("proj_gelu", QuickGELU()),
@@ -563,8 +569,11 @@ class HOIDetector(nn.Module):
             padding_zeros = torch.zeros(remain_length, dtype=torch.long).to(description_token.device)
             token = torch.cat([description_token, padding_zeros])
             token_embedding = self.token_embedding(token).type(self.dtype)
-            full_token_embedding = torch.cat([
-                token_embedding[0:1, :], self.auxiliary_hoi_prefix, token_embedding[1:, :]], dim=0)
+            if self.auxiliary_prefix_length > 0:
+                full_token_embedding = torch.cat([
+                    token_embedding[0:1, :], self.auxiliary_hoi_prefix, token_embedding[1:, :]], dim=0)
+            else:
+                full_token_embedding = torch.cat([token_embedding[0:1, :], token_embedding[1:, :]], dim=0)
             all_token_embeddings.append(full_token_embedding)
         
         eot_indices = torch.as_tensor(eot_indices)
@@ -645,24 +654,26 @@ class HOIDetector(nn.Module):
         # import pdb; pdb.set_trace()
         # text encoder
         text_features = self.encode_text(text)
-        auxiliary_text_features = self.encode_text(auxiliary_texts, is_auxiliary_text=True)
-
+        if self.use_aux_text:
+            auxiliary_text_features = self.encode_text(auxiliary_texts, is_auxiliary_text=True)
+            auxiliary_text_features = auxiliary_text_features / auxiliary_text_features.norm(dim=-1, keepdim=True)
+            auxiliary_logit_scale = self.auxiliary_logit_scale.exp()
         # normalized features
         # image_features = vision_outputs["image_features"]
         # image_features = image_features / image_features.norm(dim=-1, keepdim=True)
         hoi_features = vision_outputs["hoi_features"]
         hoi_features = hoi_features / hoi_features.norm(dim=-1, keepdim=True)
         text_features = text_features / text_features.norm(dim=-1, keepdim=True)
-        auxiliary_text_features = auxiliary_text_features / auxiliary_text_features.norm(dim=-1, keepdim=True)
 
         # [image level] cosine similarity as logits
         logit_scale = self.logit_scale.exp()
-        auxiliary_logit_scale = self.auxiliary_logit_scale.exp()
         # logits_per_image = logit_scale * image_features @ text_features.t()
         # logits_per_text = logits_per_image.t()
 
         # [hoi level] cosine similarity between hoi_features and text_features
-        logits_per_hoi = logit_scale * hoi_features @ text_features.t() + auxiliary_logit_scale * hoi_features @ auxiliary_text_features.t()
+        logits_per_hoi = logit_scale * hoi_features @ text_features.t() 
+        if self.use_aux_text:
+            logits_per_hoi = logits_per_hoi + auxiliary_logit_scale * hoi_features @ auxiliary_text_features.t()
 
         return_dict = {
             # "logits_per_image": logits_per_image,
@@ -785,8 +796,10 @@ def build_model(args):
         clip_preprocess=args.clip_preprocess,
         vision_decoder_layers=args.vision_decoder_layers,
         vision_decoder_heads=args.vision_decoder_heads,
+        # multi-level
         multi_scale=args.multi_scale,
         f_idxs = args.f_idxs,
+        # semantic query
         semantic_query=args.semantic_query,
         semantic_units_file=args.semantic_units_file,
         # bounding box head
@@ -801,6 +814,9 @@ def build_model(args):
         transformer_layers=args.transformer_layers,
         prefix_length=args.prefix_length,
         conjun_length=args.conjun_length,
+        ## aux_text
+        use_aux_text=args.use_aux_text,
+        auxiliary_prefix_length=args.auxiliary_prefix_length,
         use_prompt_hint=args.use_prompt_hint,
         # hyper params
         hoi_dropout_weight=args.hoi_dropout_weight,

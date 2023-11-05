@@ -59,6 +59,8 @@ def get_args_parser():
                         help="number of [PREFIX] tokens at the beginning of sentences")
     parser.add_argument('--conjun_length', default=2, type=int,
                         help="number of [CONJUN] tokens between actions and objects")
+    parser.add_argument('--use_aux_text', default=False, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--auxiliary_prefix_length', default=0, type=int)
     parser.add_argument('--use_prompt_hint', default=False, type=lambda x: (str(x).lower() == 'true'),
                         help='whether to use prompt hint in the text encoder')
     # hyper params

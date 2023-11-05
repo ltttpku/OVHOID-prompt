@@ -85,8 +85,9 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     text_tokens, auxiliary_texts = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device, hoi_descriptions)
     text_features = model.encode_text(text_tokens, pure_words=False)
     text_features /= text_features.norm(dim=-1, keepdim=True)
-    auxiliary_text_features = model.encode_text(auxiliary_texts, is_auxiliary_text=True)
-    auxiliary_text_features /= auxiliary_text_features.norm(dim=-1, keepdim=True)
+    if args.use_aux_text:
+        auxiliary_text_features = model.encode_text(auxiliary_texts, is_auxiliary_text=True)
+        auxiliary_text_features /= auxiliary_text_features.norm(dim=-1, keepdim=True)
     if args.use_prompt_hint:
         prompt_hint = model.encode_text(text_tokens, pure_words=True)
         prompt_hint = model.promp_proj(prompt_hint)
@@ -127,8 +128,9 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         
         hoi_features = vision_outputs['hoi_features']
         hoi_features = hoi_features / hoi_features.norm(dim=-1, keepdim=True)
-        logits_per_hoi = model.logit_scale.exp() * hoi_features @ text_features.t() + \
-            model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
+        logits_per_hoi = model.logit_scale.exp() * hoi_features @ text_features.t()
+        if args.use_aux_text:
+            logits_per_hoi = logits_per_hoi + model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
 
