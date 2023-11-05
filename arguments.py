@@ -128,6 +128,7 @@ def get_args_parser():
     parser.add_argument('--vis_dir', default='', help='path where to save visualization results')
     parser.add_argument('--bbox_lambda', default=1.0, type=float)
     parser.add_argument('--aux_text_weight', default=1.0, type=float)
+    parser.add_argument('--enable_softmax', action='store_true')
     # Training setup
     parser.add_argument('--eval', action='store_true')
     parser.add_argument('--seed', default=22, type=int)

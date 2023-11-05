@@ -133,7 +133,8 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
             logits_per_hoi = logits_per_hoi + args.aux_text_weight * model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
-
+        if args.enable_softmax:
+            logits_per_hoi = torch.nn.Softmax(-1)(logits_per_hoi)
         outputs = {"logits_per_hoi": logits_per_hoi,
                    "pred_boxes": pred_boxes,
                    "box_scores": box_scores,
