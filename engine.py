@@ -137,9 +137,14 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         if args.use_aux_text:
             aux_text_logits = model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
             # aux_text_logits = ((-1) * (args.best_beta - args.best_beta * aux_text_logits)).exp()
-            aux_text_logits[:,:,zero_hois] = aux_text_logits[:,:,zero_hois] * torch.as_tensor(args.aux_text_weight_zero).to(device)
-            aux_text_logits[:,:,rare_hois] = aux_text_logits[:,:,rare_hois] * torch.as_tensor(args.aux_text_weight_rare).to(device)
-            aux_text_logits[:,:,nonrare_hois] = aux_text_logits[:,:,nonrare_hois] * torch.as_tensor(args.aux_text_weight_nonrare).to(device)
+            aux_text_logits[:,:,zero_hois] = aux_text_logits[:,:,zero_hois] * args.aux_text_weight_zero
+            aux_text_logits[:,:,rare_hois] = aux_text_logits[:,:,rare_hois] * args.aux_text_weight_rare
+            aux_text_logits[:,:,nonrare_hois] = aux_text_logits[:,:,nonrare_hois] * args.aux_text_weight_nonrare
+
+            logits_per_hoi[:,:,zero_hois] = logits_per_hoi[:,:,zero_hois] * (2 - args.aux_text_weight_zero)
+            logits_per_hoi[:,:,rare_hois] = logits_per_hoi[:,:,rare_hois] * (2 - args.aux_text_weight_rare)
+            logits_per_hoi[:,:,nonrare_hois] = logits_per_hoi[:,:,nonrare_hois] * (2 - args.aux_text_weight_nonrare)
+
             logits_per_hoi = logits_per_hoi + aux_text_logits
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
