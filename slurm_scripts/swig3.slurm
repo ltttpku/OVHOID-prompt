@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=vision-language    # create a short name for your job
-#SBATCH --partition=HGX
+#SBATCH --partition=DGX
 #SBATCH --account=research
 #SBATCH --qos=lv0b
 #SBATCH --nodes=1                # node count
