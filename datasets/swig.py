@@ -210,14 +210,14 @@ def make_transforms(image_set, args):
         T.Normalize([0.48145466, 0.4578275, 0.40821073], [0.26862954, 0.26130258, 0.27577711]),
     ])
 
-    scales = [224, 256, 288, 320, 352, 384, 416, 448, 480, 512]
-    # scales = [224, 256, 288, 320]
+    # scales = [224, 256, 288, 320, 352, 384, 416, 448, 480, 512]
+    scales = [224, 256, 288, 320]
 
     if image_set == "train":
         return T.Compose([
             T.RandomHorizontalFlip(),
-            # T.ColorJitter(brightness=[0.8, 1.2], contrast=[0.8, 1.2], saturation=[0.8, 1.2]),
-            T.ColorJitter(brightness=[0.6, 1.4], contrast=[0.6, 1.4], saturation=[0.6, 1.4]),
+            T.ColorJitter(brightness=[0.8, 1.2], contrast=[0.8, 1.2], saturation=[0.8, 1.2]),
+            # T.ColorJitter(brightness=[0.6, 1.4], contrast=[0.6, 1.4], saturation=[0.6, 1.4]),
             T.RandomSelect(
                 T.RandomResize(scales, max_size=scales[-1] * 1333 // 800),
                 T.Compose([
