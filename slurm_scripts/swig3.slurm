@@ -47,7 +47,7 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 export MASTER_ADDR=localhost
 export MASTER_PORT=5679
 
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2990 --use_env main.py \
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2990 --use_env main.py \
     --batch_size 64 \
     --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms2+5+8+11_cm5_AuxText_StrongAug \
     --epochs 120 \
@@ -57,7 +57,7 @@ export MASTER_PORT=5679
     --dataset_file swig --multi_scale true --f_idxs 2 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --eval --test_score_thresh 1e-4 \
     --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms2+5+8+11_cm5_AuxText_StrongAug/checkpoint0080.pth --bbox_lambda 2.0
 
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2990 --use_env main.py \
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2990 --use_env main.py \
     --batch_size 64 \
     --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms2+5+8+11_cm5_AuxText_StrongAug \
     --epochs 120 \
@@ -67,7 +67,7 @@ export MASTER_PORT=5679
     --dataset_file swig --multi_scale true --f_idxs 2 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --eval --test_score_thresh 1e-4 \
     --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms2+5+8+11_cm5_AuxText_StrongAug/checkpoint0090.pth --bbox_lambda 2.0
 
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2990 --use_env main.py \
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2990 --use_env main.py \
     --batch_size 64 \
     --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms2+5+8+11_cm5_AuxText_StrongAug \
     --epochs 120 \
