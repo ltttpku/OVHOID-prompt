@@ -76,7 +76,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     header = 'Test:'
 
     # Convert applicable model parameters to fp16
-    convert_weights(model)
+    # convert_weights(model)
 
     # Build evaluator
     evaluator = build_evaluator(args)
