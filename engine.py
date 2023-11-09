@@ -361,7 +361,7 @@ def get_hoi_descriptions(dataset_name):
     '''
     res = {}
     if "swig" in dataset_name:
-        with open("swig_final_class.json", "r") as f:
+        with open("swig_hoi_descriptions.json", "r") as f:
             swig_hoi_descriptions = json.load(f)
         for hoi in SWIG_INTERACTIONS:
             # action_description = SWIG_ACTIONS[hoi["action_id"]]["def"]
