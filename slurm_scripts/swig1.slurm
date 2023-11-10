@@ -56,7 +56,7 @@ export MASTER_PORT=5679
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 12 \
     --eval --test_score_thresh 1e-4 \
-    --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText8/checkpoint0080.pth --bbox_lambda 2.0
+    --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText12/checkpoint0080.pth --bbox_lambda 2.0
 
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
     --batch_size 64 \
