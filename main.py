@@ -138,7 +138,7 @@ def main(args):
         if args.output_dir:
             checkpoint_paths = [output_dir / 'checkpoint.pth']
             # extra checkpoint before LR drop and every 100 epochs
-            if (epoch + 1) % args.lr_drop == 0 or (epoch % 10 == 0 and epoch >= 70):
+            if (epoch + 1) % args.lr_drop == 0 or (epoch % 5 == 0 and epoch >= 80):
                 checkpoint_paths.append(output_dir / f'checkpoint{epoch:04}.pth')
             for checkpoint_path in checkpoint_paths:
                 utils.save_on_master({
@@ -148,25 +148,6 @@ def main(args):
                     'epoch': epoch,
                     'args': args,
                 }, checkpoint_path)
-            
-            if epoch >= 0:
-                if args.distributed:
-                    test_stats, evaluator = evaluate(model.module, postprocessors, criterion, data_loader_val, device, args)
-                else:
-                    test_stats, evaluator = evaluate(model, postprocessors, criterion, data_loader_val, device, args)
-                zero_mAP, rare_mAP, nonrare_mAP, full_mAP = evaluator.summarize()
-                import pdb; pdb.set_trace()
-                if zero_mAP > best_zero_mAP or zero_mAP >= 10.5:
-                    best_zero_mAP = max(best_zero_mAP , zero_mAP)
-                    if full_mAP > best_full_mAP:
-                        best_full_mAP = full_mAP
-                        utils.save_on_master({
-                            'model': model_without_ddp.state_dict(),
-                            'optimizer': optimizer.state_dict(),
-                            'lr_scheduler': lr_scheduler.state_dict(),
-                            'epoch': epoch,
-                            'args': args,
-                        }, output_dir / f'checkpoint{epoch:04}_{zero_mAP}_{full_mAP}.pth')
 
         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
                      'epoch': epoch,
