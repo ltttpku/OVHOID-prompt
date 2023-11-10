@@ -121,7 +121,7 @@ def get_args_parser():
     parser.add_argument('--ignore_non_interaction', default=True, type=lambda x: (str(x).lower() == 'true'),
                         help='[specific for hico], ignore <non_interaction> category')
     # Inference
-    parser.add_argument('--test_score_thresh', default=0.01, type=float,
+    parser.add_argument('--test_score_thresh', default=0.0001, type=float,
                         help="threshold to filter out HOI predictions")
     parser.add_argument('--eval_size', default=448, type=int, help="image resolution for evaluation")
     parser.add_argument('--vis_outputs', action='store_true', help='visualize the model outputs')
