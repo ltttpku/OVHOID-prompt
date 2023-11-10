@@ -642,7 +642,7 @@ class HOIDetector(nn.Module):
             for idx in range(len(feature_maps)):
                 cur_feature_map = feature_maps[idx]
                 vision_output = self.hoi_visual_decoder(image=cur_feature_map, mask=decoder_mask, prompt_hint=prompt_hint)
-                vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / (len(feature_maps)-1)
+                vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / max(1, len(feature_maps)-1)
                 vision_output_lst.append(vision_output)
             vision_outputs = {}
             key_lst = list(vision_output_lst[0].keys())
