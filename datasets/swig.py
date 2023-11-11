@@ -216,8 +216,8 @@ def make_transforms(image_set, args):
     if image_set == "train":
         return T.Compose([
             T.RandomHorizontalFlip(),
-            T.ColorJitter(brightness=[0.8, 1.2], contrast=[0.8, 1.2], saturation=[0.8, 1.2]),
-            # T.ColorJitter(brightness=[0.6, 1.4], contrast=[0.6, 1.4], saturation=[0.6, 1.4]),
+            # T.ColorJitter(brightness=[0.8, 1.2], contrast=[0.8, 1.2], saturation=[0.8, 1.2]),
+            T.ColorJitter(brightness=[0.6, 1.4], contrast=[0.6, 1.4], saturation=[0.6, 1.4]),
             T.RandomSelect(
                 T.RandomResize(scales, max_size=scales[-1] * 1333 // 800),
                 T.Compose([
