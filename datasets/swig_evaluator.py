@@ -52,7 +52,6 @@ class SWiGEvaluator(object):
         print("rare mAP: {:.2f}".format(rare_mAP * 100.))
         print("nonrare mAP: {:.2f}".format(nonrare_mAP * 100.))
         print("full mAP: {:.2f}".format(full_mAP * 100.))
-        return float('%.2f'%zero_mAP*100), float('%.2f'%rare_mAP*100), float('%.2f'%nonrare_mAP*100), float('%.2f'%full_mAP*100)
 
     def save_preds(self):
         with open(os.path.join(self.output_dir, "preds.pkl"), "wb") as f:
