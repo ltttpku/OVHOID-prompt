@@ -859,7 +859,10 @@ def build_model(args):
         matcher=matcher,
         weight_dict=weight_dict,
         eos_coef=args.eos_coef,
-        losses=losses
+        losses=losses,
+        enable_focal_loss=args.enable_focal_loss,
+        focal_alpha=args.focal_alpha,
+        focal_gamma=args.focal_gamma,
     )
     device = torch.device(args.device)
     criterion.to(device)

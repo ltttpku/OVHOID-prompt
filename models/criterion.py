@@ -13,7 +13,7 @@ class SetCriterion(nn.Module):
         1) we compute hungarian assignment between ground truth boxes and the outputs of the model
         2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
     """
-    def __init__(self, matcher, weight_dict, eos_coef, losses):
+    def __init__(self, matcher, weight_dict, eos_coef, losses, enable_focal_loss=False, focal_alpha=0.5, focal_gamma=0.2):
         """ Create the criterion.
         Parameters:
             matcher: module able to compute a matching between targets and proposals
@@ -26,7 +26,57 @@ class SetCriterion(nn.Module):
         self.weight_dict = weight_dict
         self.eos_coef = eos_coef
         self.losses = losses
+        self.enable_focal_loss = enable_focal_loss
+        self.focal_alpha = focal_alpha
+        self.focal_gamma = focal_gamma
+    
+    def binary_focal_loss_with_logits(
+        self,
+        x: torch.Tensor, y: torch.Tensor,
+        alpha: float = 0.5,
+        gamma: float = 2.0,
+        reduction: str = 'mean',
+        eps: float = 1e-6
+    ) -> torch.Tensor:
+        """
+        Focal loss by Lin et al.
+        https://arxiv.org/pdf/1708.02002.pdf
 
+        L = - |1-y-alpha| * |y-x|^{gamma} * log(|1-y-x|)
+
+        Parameters:
+        -----------
+        x: Tensor[N, K]
+            Post-normalisation scores
+        y: Tensor[N, K]
+            Binary labels
+        alpha: float
+            Hyper-parameter that balances between postive and negative examples
+        gamma: float
+            Hyper-paramter suppresses well-classified examples
+        reduction: str
+            Reduction methods
+        eps: float
+            A small constant to avoid NaN values from 'PowBackward'
+
+        Returns:
+        --------
+        loss: Tensor
+            Computed loss tensor
+        """
+        loss = (1 - y - alpha).abs() * ((y-torch.sigmoid(x)).abs() + eps) ** gamma * \
+            torch.nn.functional.binary_cross_entropy_with_logits(
+                x, y, reduction='none'
+            )
+        if reduction == 'mean':
+            return loss.mean()
+        elif reduction == 'sum':
+            return loss.sum()
+        elif reduction == 'none':
+            return loss
+        else:
+            raise ValueError("Unsupported reduction method {}".format(reduction))
+    
     def loss_labels(self, outputs, targets, indices, num_boxes, log=True):
         """Classification loss (NLL)
         targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
@@ -36,15 +86,23 @@ class SetCriterion(nn.Module):
         target_classes_i, target_classes_t = self._get_tgt_labels(targets, indices, src_logits.device)
 
         idx = self._get_src_permutation_idx(indices)
-        # image-to-text alignment loss
-        loss_i = F.cross_entropy(src_logits[idx], target_classes_i)
-        # text-to-image alignment loss
-        if self.training:
-            num_tgts = target_classes_t.shape[1]
-            loss_t = self.masked_out_cross_entropy(src_logits[idx][:, :num_tgts].t(), target_classes_t.t())
-            losses = {"loss_ce": (loss_i + loss_t) / 2}
+        # focal loss
+        if self.enable_focal_loss:
+            labels = torch.zeros_like(src_logits[idx], device=src_logits.device)
+            labels[torch.arange(src_logits[idx].shape[0]).to(src_logits.device), target_classes_i] = 1
+            focal_loss = self.binary_focal_loss_with_logits(src_logits[idx], labels, reduction='sum', alpha=self.focal_alpha, gamma=self.focal_gamma)
+            focal_loss = focal_loss / len(labels)
+            losses = {'loss_ce': focal_loss}
         else:
-            losses = {'loss_ce': loss_i}
+            # image-to-text alignment loss
+            loss_i = F.cross_entropy(src_logits[idx], target_classes_i)
+            # text-to-image alignment loss
+            if self.training:
+                num_tgts = target_classes_t.shape[1]
+                loss_t = self.masked_out_cross_entropy(src_logits[idx][:, :num_tgts].t(), target_classes_t.t())
+                losses = {"loss_ce": (loss_i + loss_t) / 2}
+            else:
+                losses = {'loss_ce': loss_i}
 
         if log:
             # TODO this should probably be a separate loss, not hacked in this one here
