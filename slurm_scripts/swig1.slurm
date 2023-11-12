@@ -5,7 +5,7 @@
 #SBATCH --qos=lv0b
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
-#SBATCH --gres=gpu:2             # number of gpus per node
+#SBATCH --gres=gpu:1             # number of gpus per node
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=100G               # total memory (RAM) per node
 #SBATCH --time=0-24:00:00          # total run time limit (HH:MM:SS)
@@ -33,17 +33,66 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2991 --use_env main.py \
+# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2991 --use_env main.py \
+#     --batch_size 64 \
+#     --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2 \
+#     --epochs 120 \
+#     --lr 1e-4 --min-lr 1e-7 \
+#     --hoi_token_length 10 \
+#     --enable_dec \
+#     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 --enable_focal_loss --focal_gamma 2.0
+
+
+## Inference
+export MASTER_ADDR=localhost
+export MASTER_PORT=5679
+
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
     --batch_size 64 \
     --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2 \
     --epochs 120 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 10 \
     --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 --enable_focal_loss --focal_gamma 2.0
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 --enable_focal_loss --focal_gamma 2.0 \
+    --eval --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2/checkpoint0080.pth
 
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2 \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 10 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 --enable_focal_loss --focal_gamma 2.0 \
+    --eval --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2/checkpoint0085.pth
 
-# ## Inference
-# export MASTER_ADDR=localhost
-# export MASTER_PORT=5679
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2 \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 10 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 --enable_focal_loss --focal_gamma 2.0 \
+    --eval --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2/checkpoint0090.pth
 
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2 \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 10 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 --enable_focal_loss --focal_gamma 2.0 \
+    --eval --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2/checkpoint0095.pth
+
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2 \
+    --epochs 120 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 10 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 --enable_focal_loss --focal_gamma 2.0 \
+    --eval --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_focal_gamma2/checkpoint0100.pth
