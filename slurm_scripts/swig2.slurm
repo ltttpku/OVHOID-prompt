@@ -33,14 +33,14 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_color1e-4 \
-    --epochs 120 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0
+# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
+#     --batch_size 64 \
+#     --output_dir checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_color1e-4 \
+#     --epochs 120 \
+#     --lr 1e-4 --min-lr 1e-7 \
+#     --hoi_token_length 10 \
+#     --enable_dec \
+#     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0
 
 
 # ## Inference
@@ -55,7 +55,7 @@ export MASTER_PORT=5679
     --hoi_token_length 10 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 \
-    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0/checkpoint0080.pth
+    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_color1e-4/checkpoint0080.pth
 
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
     --batch_size 64 \
@@ -65,7 +65,7 @@ export MASTER_PORT=5679
     --hoi_token_length 10 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 \
-    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0/checkpoint0085.pth
+    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_color1e-4/checkpoint0085.pth
 
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
     --batch_size 64 \
@@ -75,7 +75,7 @@ export MASTER_PORT=5679
     --hoi_token_length 10 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 \
-    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0/checkpoint0090.pth
+    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_color1e-4/checkpoint0090.pth
 
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
     --batch_size 64 \
@@ -85,7 +85,7 @@ export MASTER_PORT=5679
     --hoi_token_length 10 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 \
-    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0/checkpoint0095.pth
+    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_color1e-4/checkpoint0095.pth
 
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
     --batch_size 64 \
@@ -95,7 +95,7 @@ export MASTER_PORT=5679
     --hoi_token_length 10 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 \
-    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0/checkpoint0100.pth
+    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_color1e-4/checkpoint0100.pth
 
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
     --batch_size 64 \
@@ -105,7 +105,7 @@ export MASTER_PORT=5679
     --hoi_token_length 10 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 \
-    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0/checkpoint0105.pth
+    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_color1e-4/checkpoint0105.pth
 
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
     --batch_size 64 \
@@ -115,7 +115,7 @@ export MASTER_PORT=5679
     --hoi_token_length 10 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 \
-    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0/checkpoint0110.pth
+    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_color1e-4/checkpoint0110.pth
 
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2992 --use_env main.py \
     --batch_size 64 \
@@ -125,4 +125,4 @@ export MASTER_PORT=5679
     --hoi_token_length 10 \
     --enable_dec \
     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 0 \
-    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0/checkpoint0115.pth
+    --eval --pretrained checkpoints/swig_bs1x64_lr1e-4_token10_ms5+8+11_cm5_AuxText0_color1e-4/checkpoint0115.pth
