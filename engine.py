@@ -237,6 +237,7 @@ def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
         action_to_related_hois = data_loader.dataset.action_to_related_hois
 
         related_texts = []
+        related_auxiliary_texts = []
         related_text_inputs = []
         unique_actions = set()
         unique_objects = set()
@@ -268,6 +269,12 @@ def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
                     object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
                     related_texts.append([action_token, object_token])
                     related_text_inputs.append(action_text + " " + object_text)
+                    ## hoi descriptions
+                    hoi_name = " ".join([action_text, object_text])
+                    cur_hoi_description = " ".join(hoi_descriptions[hoi_name])
+                    cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
+                    cur_hoi_description_token = torch.as_tensor([sot_token] + cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
+                    related_auxiliary_texts.append(cur_hoi_description_token)
 
                 related_hois = object_to_related_hois[query_object_text]
                 for hoi in related_hois:
@@ -286,7 +293,14 @@ def prepare_inputs(images, targets, data_loader, device, hoi_descriptions):
                     object_token = torch.as_tensor(object_token + [eot_token], dtype=torch.long).to(device)
                     related_texts.append([action_token, object_token])
                     related_text_inputs.append(action_text + " " + object_text)
+                    ## hoi descriptions
+                    hoi_name = " ".join([action_text, object_text])
+                    cur_hoi_description = " ".join(hoi_descriptions[hoi_name])
+                    cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
+                    cur_hoi_description_token = torch.as_tensor([sot_token] + cur_hoi_description_token + [eot_token], dtype=torch.long).to(device)
+                    auxiliary_texts.append(cur_hoi_description_token)
         texts.extend(related_texts)
+        auxiliary_texts.extend(related_auxiliary_texts)
 
     return images, targets, texts, auxiliary_texts
 
@@ -369,7 +383,11 @@ def get_hoi_descriptions(dataset_name):
             # res[hoi["name"]] = [f"Action: {action_description}", f"Object: {object_description}."]
             res[hoi["name"]] = swig_hoi_descriptions[hoi["name"]]
     else:
-        raise NotImplementedError
+        with open("hico_hoi_descriptions.json", "r") as f:
+            hico_hoi_descriptions = json.load(f)
+        for hoi in HICO_INTERACTIONS:
+            hoi_name = " ".join([hoi["action"], hoi["object"]])
+            res[hoi_name] = hico_hoi_descriptions[hoi_name]
     return res
     
 ''' deprecated, text
