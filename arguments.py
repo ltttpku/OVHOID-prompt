@@ -76,8 +76,8 @@ def get_args_parser():
     parser.add_argument('--no_aux_loss', dest='aux_loss', action='store_false',
                         help="Disables auxiliary decoding losses (loss at each layer)")
     parser.add_argument('--enable_focal_loss', action='store_true', help='enable decoders')
-    parser.add_argument('--focal_alpha', default=0.5, type=float)
-    parser.add_argument('--focal_gamma', default=0.2, type=float)
+    parser.add_argument('--focal_alpha', default=0.3, type=float)
+    parser.add_argument('--focal_gamma', default=1.0, type=float)
     # * Matcher
     parser.add_argument('--set_cost_class', default=5, type=float,
                         help="class coefficient in the matching cost")
