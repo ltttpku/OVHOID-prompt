@@ -863,6 +863,7 @@ def build_model(args):
         enable_focal_loss=args.enable_focal_loss,
         focal_alpha=args.focal_alpha,
         focal_gamma=args.focal_gamma,
+        consider_all=args.consider_all,
     )
     device = torch.device(args.device)
     criterion.to(device)
