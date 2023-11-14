@@ -33,7 +33,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         images, targets, texts, auxiliary_texts = prepare_inputs(images, targets, data_loader, device, hoi_descriptions)
         if consider_all_hois:
             texts, auxiliary_texts = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device, hoi_descriptions)
-            import pdb; pdb.set_trace()
         # images.tensors:torch.Size([8, 3, 320, 480]); images.mask: torch.Size([8, 320, 480])
         img_sizes = torch.stack([targets[z]['size'] for z in range(len(targets))], dim=0)
         outputs = model(images.tensors, texts, images.mask, img_sizes, auxiliary_texts) # dict_keys(['logits_per_hoi', 'pred_boxes', 'box_scores', 'attn_maps', 'level_id'])

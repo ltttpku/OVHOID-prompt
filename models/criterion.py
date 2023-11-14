@@ -85,7 +85,6 @@ class SetCriterion(nn.Module):
         assert 'logits_per_hoi' in outputs
         src_logits = outputs['logits_per_hoi']
         target_classes_i, target_classes_t = self._get_tgt_labels(targets, indices, src_logits.device)
-        import pdb; pdb.set_trace()
         idx = self._get_src_permutation_idx(indices)
         # focal loss
         if self.enable_focal_loss:
