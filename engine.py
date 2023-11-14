@@ -94,10 +94,6 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     else:
         prompt_hint = torch.zeros(0, args.vision_width).half().to(device)
     
-    reversed_hoi_mapper = dict((v, k) for k, v in data_loader.dataset.text_mapper.items())
-    zero_hois = torch.as_tensor([reversed_hoi_mapper[x["id"]] for x in SWIG_INTERACTIONS if x["frequency"] == 0 and x["evaluation"] == 1]).to(device)
-    rare_hois = torch.as_tensor([reversed_hoi_mapper[x["id"]] for x in SWIG_INTERACTIONS if x["frequency"] == 1 and x["evaluation"] == 1]).to(device)
-    nonrare_hois = torch.as_tensor([reversed_hoi_mapper[x["id"]] for x in SWIG_INTERACTIONS if x["frequency"] == 2 and x["evaluation"] == 1]).to(device)
     # Inference
     for images, targets in metric_logger.log_every(data_loader, 10, header):
         images = images.to(device)
@@ -137,11 +133,8 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         if args.use_aux_text:
             aux_text_logits = model.auxiliary_logit_scale.exp() * hoi_features @ auxiliary_text_features.t()
             # aux_text_logits = ((-1) * (args.best_beta - args.best_beta * aux_text_logits)).exp()
-            aux_text_logits[:,:,zero_hois] = aux_text_logits[:,:,zero_hois] * args.aux_text_weight_zero
-            aux_text_logits[:,:,rare_hois] = aux_text_logits[:,:,rare_hois] * args.aux_text_weight_rare
-            aux_text_logits[:,:,nonrare_hois] = aux_text_logits[:,:,nonrare_hois] * args.aux_text_weight_nonrare
-
             logits_per_hoi = logits_per_hoi + aux_text_logits
+        
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
         
@@ -313,7 +306,7 @@ def prepare_text_inputs(model, texts, device, hoi_descriptions):
     text_tokens = []
     auxiliary_texts = []
     for action_text, object_text in texts:
-        hoi_name = " ".join([action_text, object_text])
+        hoi_name = " ".join([action_text.replace(" ", "_"), object_text])
         # cur_hoi_description = random.sample(hoi_descriptions[hoi_name], len(hoi_descriptions[hoi_name]))
         cur_hoi_description = " ".join(hoi_descriptions[hoi_name])
         cur_hoi_description_token = _tokenizer.encode(cur_hoi_description)
