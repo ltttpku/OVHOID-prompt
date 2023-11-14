@@ -131,7 +131,7 @@ def main(args):
         if args.distributed:
             sampler_train.set_epoch(epoch)
         train_stats = train_one_epoch(model, criterion, data_loader_train, optimizer,
-                                      device, epoch, args.clip_max_norm, args.dataset_file)
+                                      device, epoch, args.clip_max_norm, args.dataset_file, consider_all_hois=args.consider_all)
         lr_scheduler.step(epoch)
 
         # checkpoint saving

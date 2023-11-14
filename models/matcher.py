@@ -29,6 +29,7 @@ class HungarianMatcher(nn.Module):
         cost_conf: float = 1,
         hoi_type: str = 'min',
         cost_hoi_type: float = 1,
+        consider_all: bool = False,
     ):
         """Creates the matcher
 
@@ -45,6 +46,7 @@ class HungarianMatcher(nn.Module):
         assert cost_class != 0 or cost_bbox != 0 or cost_giou != 0 or cost_conf != 0, "all costs cant be 0"
         self.hoi_type = hoi_type
         self.cost_hoi_type = cost_hoi_type
+        self.consider_all = consider_all
 
     @torch.no_grad()
     def forward(self, outputs, targets):
@@ -83,7 +85,7 @@ class HungarianMatcher(nn.Module):
         for t in targets:
             for hoi in t["hois"]:
                 hoi_id = hoi["hoi_id"]
-                if self.training:
+                if self.training and self.consider_all is False:
                     # Only consider the texts within each mini-batch
                     if hoi_id not in unique_hois:
                         unique_hois[hoi_id] = cnt
@@ -145,4 +147,5 @@ def build_matcher(args):
         cost_conf=args.set_cost_conf,
         hoi_type=args.hoi_type,
         cost_hoi_type=args.set_cost_hoi_type,
+        consider_all=args.consider_all,
     )

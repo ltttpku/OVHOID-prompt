@@ -13,7 +13,7 @@ class SetCriterion(nn.Module):
         1) we compute hungarian assignment between ground truth boxes and the outputs of the model
         2) we supervise each pair of matched ground-truth / prediction (supervise class and box)
     """
-    def __init__(self, matcher, weight_dict, eos_coef, losses, enable_focal_loss=False, focal_alpha=0.5, focal_gamma=0.2):
+    def __init__(self, matcher, weight_dict, eos_coef, losses, enable_focal_loss=False, focal_alpha=0.5, focal_gamma=0.2, consider_all=False):
         """ Create the criterion.
         Parameters:
             matcher: module able to compute a matching between targets and proposals
@@ -29,6 +29,7 @@ class SetCriterion(nn.Module):
         self.enable_focal_loss = enable_focal_loss
         self.focal_alpha = focal_alpha
         self.focal_gamma = focal_gamma
+        self.consider_all = consider_all
     
     def binary_focal_loss_with_logits(
         self,
@@ -84,7 +85,7 @@ class SetCriterion(nn.Module):
         assert 'logits_per_hoi' in outputs
         src_logits = outputs['logits_per_hoi']
         target_classes_i, target_classes_t = self._get_tgt_labels(targets, indices, src_logits.device)
-
+        import pdb; pdb.set_trace()
         idx = self._get_src_permutation_idx(indices)
         # focal loss
         if self.enable_focal_loss:
@@ -195,7 +196,7 @@ class SetCriterion(nn.Module):
         return batch_idx, tgt_idx
 
     def _get_tgt_labels(self, targets, indices, device):
-        if self.training:
+        if self.training and not self.consider_all:
             unique_hois, cnt = {}, 0 # Get unique hoi ids in the mini-batch
             for t in targets:
                 for hoi in t["hois"]:
@@ -214,7 +215,7 @@ class SetCriterion(nn.Module):
             for i, cls_id in zip(range(len(target_classes_i)), target_classes_i):
                 target_classes_t[i, cls_id] = 1
             target_classes_t = target_classes_t.to(device)
-        else:
+        else: ## Consider all HOIs
             target_classes_i = []
             for t, (_, indices_per_t) in zip(targets, indices):
                 for i in indices_per_t:

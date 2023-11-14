@@ -91,6 +91,7 @@ def get_args_parser():
                         help="hoi_type in the matching cost")
     parser.add_argument('--set_cost_hoi_type', default=0, type=float,
                         help="hoi_type coefficient in the matching cost")
+    parser.add_argument('--consider_all', default=False, type=lambda x: (str(x).lower() == 'true'))
     # * Loss coefficients
     parser.add_argument('--class_loss_coef', default=5, type=float)
     parser.add_argument('--bbox_loss_coef', default=5, type=float)
