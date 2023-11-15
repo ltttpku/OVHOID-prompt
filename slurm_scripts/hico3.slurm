@@ -33,7 +33,7 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 3993 --use_env main.py \
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 3994 --use_env main.py \
     --batch_size 64 \
     --output_dir checkpoints/hico_bs2x64_lr1e-4_token15_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma2.0 \
     --epochs 100 \
