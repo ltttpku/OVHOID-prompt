@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=vision-language    # create a short name for your job
-#SBATCH --partition=DGX
+#SBATCH --partition=HGX
 #SBATCH --account=research
 #SBATCH --qos=lv0b
 #SBATCH --nodes=1                # node count
@@ -33,12 +33,12 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 3991 --use_env main.py \
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 3992 --use_env main.py \
     --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token20_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma2.0 \
+    --output_dir checkpoints/hico_bs2x64_lr1e-4_token20_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma1.0 \
     --epochs 100 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 20 \
     --enable_dec \
     --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --focal_alpha 0.5 --focal_gamma 2.0
+    --enable_focal_loss --focal_alpha 0.5 --focal_gamma 1.0
