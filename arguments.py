@@ -17,6 +17,9 @@ def get_args_parser():
     # Model Setting
     parser.add_argument('--clip_model', default="ViT-B/16", type=str,
                         help="Name of pretrained CLIP model")
+    ## description_file_path
+    parser.add_argument('--description_file_path', default="", type=str,
+                        help="Path to the hoi description file")
     # parser.add_argument('--frozen_weights', type=str, default=None,)
     # * Vision
     parser.add_argument('--embed_dim', default=512, type=int,

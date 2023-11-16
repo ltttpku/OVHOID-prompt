@@ -18,7 +18,8 @@ _tokenizer = _Tokenizer()
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
-                    device: torch.device, epoch: int, max_norm: float = 0, dataset_file: str = "", consider_all_hois: bool = False):
+                    device: torch.device, epoch: int, max_norm: float = 0, 
+                    dataset_file: str = "", consider_all_hois: bool = False, description_file_path: str = ""):
     model.train()
     criterion.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
@@ -27,7 +28,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     header = 'Epoch: [{}]'.format(epoch)
     print_freq = 10
 
-    hoi_descriptions = get_hoi_descriptions(dataset_name=dataset_file)
+    hoi_descriptions = get_hoi_descriptions(dataset_name=dataset_file, description_file_path=description_file_path)
     
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
         images, targets, texts, auxiliary_texts = prepare_inputs(images, targets, data_loader, device, hoi_descriptions)
@@ -82,7 +83,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
 
     # Build evaluator
     evaluator = build_evaluator(args)
-    hoi_descriptions = get_hoi_descriptions(dataset_name=args.dataset_file)
+    hoi_descriptions = get_hoi_descriptions(dataset_name=args.dataset_file, description_file_path=args.description_file_path)
     # Convert all interaction categories into embeddings, only forward pass once!!
     text_tokens, auxiliary_texts = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device, hoi_descriptions)
     text_features = model.encode_text(text_tokens, pure_words=False)
@@ -364,25 +365,22 @@ from datasets.swig_v1_categories import SWIG_ACTIONS, SWIG_CATEGORIES, SWIG_INTE
 from datasets.hico_categories import HICO_INTERACTIONS
 import json
 
-def get_hoi_descriptions(dataset_name):
+def get_hoi_descriptions(dataset_name, description_file_path):
     '''
     return: Dict {hoi_id: List[hoi-description1, ...]}
     '''
     res = {}
+    assert dataset_name in description_file_path
+    with open(description_file_path, "r") as f:
+        hoi_descriptions = json.load(f)
+    
     if "swig" in dataset_name:
-        with open("swig_hoi_descriptions.json", "r") as f:
-            swig_hoi_descriptions = json.load(f)
         for hoi in SWIG_INTERACTIONS:
-            # action_description = SWIG_ACTIONS[hoi["action_id"]]["def"]
-            # object_description = SWIG_CATEGORIES[hoi["object_id"]]["def"]
-            # res[hoi["name"]] = [f"Action: {action_description}", f"Object: {object_description}."]
-            res[hoi["name"]] = swig_hoi_descriptions[hoi["name"]]
+            res[hoi["name"]] = hoi_descriptions[hoi["name"]]
     else:
-        with open("hico_hoi_descriptions.json", "r") as f:
-            hico_hoi_descriptions = json.load(f)
         for hoi in HICO_INTERACTIONS:
             hoi_name = " ".join([hoi["action"], hoi["object"]])
-            res[hoi_name] = hico_hoi_descriptions[hoi_name]
+            res[hoi_name] = hoi_descriptions[hoi_name]
     return res
     
 ''' deprecated, text

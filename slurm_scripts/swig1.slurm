@@ -33,68 +33,17 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2991 --use_env main.py \
-#     --batch_size 64 \
-#     --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal \
-#     --epochs 90 \
-#     --lr 1e-4 --min-lr 1e-7 \
-#     --hoi_token_length 10 \
-#     --enable_dec \
-#     --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --use_aux_text true --auxiliary_prefix_length 0 \
-#     --enable_focal_loss
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 2991 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText4_focal_6body \
+    --epochs 90 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 10 \
+    --enable_dec \
+    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true --auxiliary_prefix_length 4 \
+    --enable_focal_loss --description_file_path swig_hoi_descriptions_6bodyparts.json
 
 
 ## Inference
 # export MASTER_ADDR=localhost
 # export MASTER_PORT=5679
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal \
-    --epochs 90 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --use_aux_text true --auxiliary_prefix_length 0 \
-    --enable_focal_loss --eval --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal/checkpoint0065.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal \
-    --epochs 90 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --use_aux_text true --auxiliary_prefix_length 0 \
-    --enable_focal_loss --eval --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal/checkpoint0070.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal \
-    --epochs 90 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --use_aux_text true --auxiliary_prefix_length 0 \
-    --enable_focal_loss --eval --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal/checkpoint0075.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal \
-    --epochs 90 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --use_aux_text true --auxiliary_prefix_length 0 \
-    --enable_focal_loss --eval --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal/checkpoint0080.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 2991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal \
-    --epochs 90 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
-    --enable_dec \
-    --dataset_file swig --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 10 --use_aux_text true --auxiliary_prefix_length 0 \
-    --enable_focal_loss --eval --pretrained checkpoints/swig_bs2x64_lr1e-4_token10_ms5+8+11_cm10_AuxText0_focal/checkpoint0085.pth
-
