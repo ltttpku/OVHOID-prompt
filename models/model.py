@@ -364,6 +364,7 @@ class HOIDetector(nn.Module):
         ## multi-level
         multi_scale: bool,
         f_idxs : list,
+        reverse_level_id: bool,
         ## semantic query
         semantic_query: bool,
         semantic_units_file: str,
@@ -415,6 +416,7 @@ class HOIDetector(nn.Module):
         self.gate_weight = torch.nn.Parameter(torch.as_tensor(0.0))
         # self.vision_mlp = nn.Parameter((vision_width ** -0.5) * torch.randn(vision_width, vision_width))
         self.multi_scale = multi_scale
+        self.reverse_level_id = reverse_level_id
         self.f_idxs = f_idxs
         self.input_resolution = image_resolution
         self.vision_width = vision_width
@@ -642,7 +644,10 @@ class HOIDetector(nn.Module):
             for idx in range(len(feature_maps)):
                 cur_feature_map = feature_maps[idx]
                 vision_output = self.hoi_visual_decoder(image=cur_feature_map, mask=decoder_mask, prompt_hint=prompt_hint)
-                vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / max(1, len(feature_maps)-1)
+                if self.reverse_level_id:
+                    vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * (len(feature_maps)-idx) / max(1, len(feature_maps)-1)
+                else:
+                    vision_output["level_id"] = torch.ones_like(vision_output['box_scores']) * idx / max(1, len(feature_maps)-1)
                 vision_output_lst.append(vision_output)
             vision_outputs = {}
             key_lst = list(vision_output_lst[0].keys())
@@ -800,6 +805,7 @@ def build_model(args):
         # multi-level
         multi_scale=args.multi_scale,
         f_idxs = args.f_idxs,
+        reverse_level_id = args.reverse_level_id,
         # semantic query
         semantic_query=args.semantic_query,
         semantic_units_file=args.semantic_units_file,

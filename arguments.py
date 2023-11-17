@@ -40,9 +40,12 @@ def get_args_parser():
                         help="number of layers in vision transformer")
     parser.add_argument('--vision_decoder_heads', default=8, type=int,
                         help="number of layers in vision transformer")
+    ## multi level
     parser.add_argument('--multi_scale', default=False, type=lambda x: (str(x).lower() == 'true'),
                         help='whether to use prompt hint in the text encoder')
     parser.add_argument('--f_idxs', nargs='+', type=int)
+    parser.add_argument('--reverse_level_id', default=False, type=lambda x: (str(x).lower() == 'true'))
+    ## semantic query
     parser.add_argument('--semantic_query', default=False, type=lambda x: (str(x).lower() == 'true'),
                         help='whether to use prompt hint in the text encoder')
     parser.add_argument('--semantic_units_file', default="", type=str,
