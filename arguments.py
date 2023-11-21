@@ -93,7 +93,7 @@ def get_args_parser():
                         help="giou box coefficient in the matching cost")
     parser.add_argument('--set_cost_conf', default=10, type=float,
                         help="box confidence score coefficient in the matching cost")
-    parser.add_argument('--hoi_type', default="center-dis", type=str, choices=["min-size", "max-size", "center-dis"],
+    parser.add_argument('--hoi_type', default="center-dis", type=str, choices=["min-size", "max-size", "center-dis", "rel-center-dis"],
                         help="hoi_type in the matching cost")
     parser.add_argument('--set_cost_hoi_type', default=0, type=float,
                         help="hoi_type coefficient in the matching cost")
@@ -130,6 +130,8 @@ def get_args_parser():
                         help='[specific for hico], treat 120 rare interactions as zero shot')
     parser.add_argument('--ignore_non_interaction', default=True, type=lambda x: (str(x).lower() == 'true'),
                         help='[specific for hico], ignore <non_interaction> category')
+    parser.add_argument('--zero_shot_type', default="default", type=str, choices=["default", "uc0", "uc1", "uc2", "uc3", "uc4",
+                                            "rare_first", "non_rare_first", "unseen_object", "unseen_verb"],)
     # Inference
     parser.add_argument('--test_score_thresh', default=0.0001, type=float,
                         help="threshold to filter out HOI predictions")

@@ -7,7 +7,7 @@ from torchvision.ops.boxes import box_area
 
 def paired_box_to_score(x, type="min-size"):
     """
-    x: N*8, N*[subject_bbox, object_bbox], cxcywh
+    x: N*8, N*[subject_bbox, object_bbox], [cx,cy,w,h, cx,cy,w,h]
     """
     subject_sizes = x[:, 2] * x[:, 3]
     object_sizes = x[:, 6] * x[:, 7]
@@ -19,6 +19,17 @@ def paired_box_to_score(x, type="min-size"):
     elif type == "center-dis":
         dis = torch.cdist(x[:, 0:2], x[:, 4:6], p=2)
         scores = torch.diag(dis)
+    elif type == "rel-center-dis":
+        absulute_dis = torch.cdist(x[:, 0:2], x[:, 4:6], p=2)
+        subject_bboxs = x[:, 0:4] # [cx,cy,w,h]
+        object_bboxs = x[:, 4:8] # [cx,cy,w,h]
+        subject_bboxs = box_cxcywh_to_xyxy(subject_bboxs)
+        object_bboxs = box_cxcywh_to_xyxy(object_bboxs)
+        assert (subject_bboxs[:, 2:] >= subject_bboxs[:, :2]).all()
+        assert (object_bboxs[:, 2:] >= object_bboxs[:, :2]).all()
+        iou, union = box_iou(subject_bboxs, object_bboxs)
+        relative_dis = absulute_dis / torch.sqrt(union)
+        scores = torch.diag(relative_dis)
     else:
         raise NotImplementedError
     return scores

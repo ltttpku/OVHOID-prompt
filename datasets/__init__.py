@@ -19,7 +19,7 @@ def build_evaluator(args):
         evaluator = SWiGEvaluator(SWIG_VAL_ANNO, args.output_dir)
     elif args.dataset_file == "hico":
         from .hico import HICO_VAL_ANNO
-        evaluator = HICOEvaluator(HICO_VAL_ANNO, args.output_dir)
+        evaluator = HICOEvaluator(HICO_VAL_ANNO, args.output_dir, args.zero_shot_type, args.ignore_non_interaction)
     else:
         raise NotImplementedError
 

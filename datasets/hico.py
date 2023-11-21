@@ -9,7 +9,7 @@ import torch.utils.data
 from torchvision.datasets import CocoDetection
 import datasets.transforms as T
 from PIL import Image
-from .hico_categories import HICO_INTERACTIONS, HICO_ACTIONS, HICO_OBJECTS, ZERO_SHOT_INTERACTION_IDS, NON_INTERACTION_IDS
+from .hico_categories import HICO_INTERACTIONS, HICO_ACTIONS, HICO_OBJECTS, ZERO_SHOT_INTERACTION_IDS, NON_INTERACTION_IDS, hico_unseen_index
 from utils.sampler import repeat_factors_from_category_frequency, get_dataset_indices
 
 
@@ -29,7 +29,8 @@ class HICO(CocoDetection):
         image_set,
         zero_shot_exp,
         repeat_factor_sampling,
-        ignore_non_interaction
+        ignore_non_interaction,
+        zero_shot_type="default"
     ):
         """
         Args:
@@ -51,7 +52,7 @@ class HICO(CocoDetection):
         dataset_texts, text_mapper = prepare_dataset_text()
         self.dataset_texts = dataset_texts
         self.text_mapper = text_mapper # text to contiguous ids for evaluation
-        object_to_related_hois, action_to_related_hois = prepare_related_hois()
+        object_to_related_hois, action_to_related_hois = prepare_related_hois(hico_unseen_index[zero_shot_type], ignore_non_interaction)
         self.object_to_related_hois = object_to_related_hois
         self.action_to_related_hois = action_to_related_hois
         # Load dataset
@@ -62,7 +63,8 @@ class HICO(CocoDetection):
             image_root=img_folder,
             zero_shot_exp=zero_shot_exp,
             repeat_factor_sampling=repeat_factor_sampling,
-            ignore_non_interaction=ignore_non_interaction)
+            ignore_non_interaction=ignore_non_interaction,
+            zero_shot_interaction_ids=hico_unseen_index[zero_shot_type])
 
     def __getitem__(self, idx: int):
 
@@ -105,6 +107,7 @@ def load_hico_json(
     zero_shot_exp=True,
     repeat_factor_sampling=False,
     ignore_non_interaction=True,
+    zero_shot_interaction_ids=[],
 ):
     """
     Load a json file with HOI's instances annotation.
@@ -171,7 +174,8 @@ def load_hico_json(
             hoi_id = action_object_to_hoi_id[text]
 
             # Ignore this annotation if we conduct zero-shot simulation experiments
-            if zero_shot_exp and (hoi_id in ZERO_SHOT_INTERACTION_IDS):
+            # if zero_shot_exp and (hoi_id in ZERO_SHOT_INTERACTION_IDS):
+            if zero_shot_exp and hoi_id in zero_shot_interaction_ids:
                 ignore_flag = True
                 continue
 
@@ -219,7 +223,7 @@ def prepare_dataset_text():
     return texts, text_mapper
 
 
-def prepare_related_hois():
+def prepare_related_hois(zero_shot_interaction_ids ,ignore_non_interaction):
     ''' Gather related hois based on object names and action names
     Returns:
         object_to_related_hois (dict): {
@@ -245,7 +249,7 @@ def prepare_related_hois():
         action_text = x['action']
         object_text = x['object']
         hoi_id = x['interaction_id']
-        if hoi_id in ZERO_SHOT_INTERACTION_IDS or hoi_id in NON_INTERACTION_IDS:
+        if hoi_id in zero_shot_interaction_ids or (hoi_id in NON_INTERACTION_IDS and ignore_non_interaction):
             continue
         hoi_text = [action_text, object_text]
 

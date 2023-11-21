@@ -4,12 +4,12 @@ import json
 import os
 import pickle
 from .hico_categories import HICO_INTERACTIONS, HICO_ACTIONS, HICO_OBJECTS
-from .hico_categories import ZERO_SHOT_INTERACTION_IDS, NON_INTERACTION_IDS
+from .hico_categories import ZERO_SHOT_INTERACTION_IDS, NON_INTERACTION_IDS, hico_unseen_index
 
 
 class HICOEvaluator(object):
     ''' Evaluator for HICO-DET dataset '''
-    def __init__(self, anno_file, output_dir):
+    def __init__(self, anno_file, output_dir, zero_shot_type, ignore_non_interaction):
         size = 600
         self.size = size
         self.gts = self.load_anno(anno_file)
@@ -19,6 +19,9 @@ class HICOEvaluator(object):
         self.hico_ap  = np.zeros(size)
         self.hico_rec = np.zeros(size)
         self.output_dir = output_dir
+        self.zero_shot_type = zero_shot_type
+        self.zero_shot_interaction_ids = hico_unseen_index[zero_shot_type]
+        self.ignore_non_interaction = ignore_non_interaction
 
     def update(self, predictions):
         ''' Store predictions
@@ -48,9 +51,14 @@ class HICOEvaluator(object):
             self.hico_ap[hoi_id], self.hico_rec[hoi_id] = ap, rec
 
     def summarize(self):
-        valid_hois = np.setdiff1d(np.arange(600), NON_INTERACTION_IDS)
-        seen_hois = np.setdiff1d(valid_hois, ZERO_SHOT_INTERACTION_IDS)
-        zero_shot_hois = np.setdiff1d(ZERO_SHOT_INTERACTION_IDS, NON_INTERACTION_IDS)
+        if self.ignore_non_interaction:
+            valid_hois = np.setdiff1d(np.arange(600), NON_INTERACTION_IDS)
+            seen_hois = np.setdiff1d(valid_hois, self.zero_shot_interaction_ids)
+            zero_shot_hois = np.setdiff1d(self.zero_shot_interaction_ids, NON_INTERACTION_IDS)
+        else:
+            valid_hois = np.setdiff1d(np.arange(600), [])
+            seen_hois = np.setdiff1d(valid_hois, self.zero_shot_interaction_ids)
+            zero_shot_hois = np.setdiff1d(self.zero_shot_interaction_ids, [])
         zero_shot_mAP = np.mean(self.hico_ap[zero_shot_hois])
         seen_mAP = np.mean(self.hico_ap[seen_hois])
         print("zero-shot mAP: {:.2f}".format(zero_shot_mAP * 100.))
