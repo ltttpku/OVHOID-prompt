@@ -35,12 +35,12 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 ## Training
 /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 3990 --use_env main.py \
     --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_UO_noninteraction \
+    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_UV \
     --epochs 100 \
     --lr 1e-4 --min-lr 1e-7 \
     --hoi_token_length 25 \
     --enable_dec \
     --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --ignore_non_interaction false
+    --enable_focal_loss --zero_shot_type unseen_verb --description_file_path hico_hoi_descriptions.json
 
 ## Evaluation
