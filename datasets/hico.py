@@ -30,7 +30,7 @@ class HICO(CocoDetection):
         zero_shot_exp,
         repeat_factor_sampling,
         ignore_non_interaction,
-        zero_shot_type="default"
+        zero_shot_type,
     ):
         """
         Args:
@@ -333,7 +333,8 @@ def build(image_set, args):
         image_set=image_set,
         zero_shot_exp=args.zero_shot_exp,
         repeat_factor_sampling=args.repeat_factor_sampling,
-        ignore_non_interaction=args.ignore_non_interaction
+        ignore_non_interaction=args.ignore_non_interaction,
+        zero_shot_type=args.zero_shot_type,
     )
 
     return dataset
