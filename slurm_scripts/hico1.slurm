@@ -5,7 +5,7 @@
 #SBATCH --qos=lv0b
 #SBATCH --nodes=1                # node count
 #SBATCH --ntasks=1               # total number of tasks across all nodes
-#SBATCH --gres=gpu:1             # number of gpus per node
+#SBATCH --gres=gpu:2             # number of gpus per node
 #SBATCH --ntasks-per-node=1
 #SBATCH --mem=100G               # total memory (RAM) per node
 #SBATCH --time=0-24:00:00          # total run time limit (HH:MM:SS)
@@ -33,103 +33,14 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 3991 --use_env main.py \
-#     --batch_size 64 \
-#     --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter \
-#     --epochs 100 \
-#     --lr 1e-4 --min-lr 1e-7 \
-#     --hoi_token_length 25 \
-#     --enable_dec \
-#     --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-#     --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --focal_alpha 0.5 --focal_gamma 0.2 \
-#     --ignore_non_interaction false
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 3991 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma1.5_UO \
+    --epochs 100 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 25 \
+    --enable_dec \
+    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
+    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --focal_alpha 0.5 --focal_gamma 1.5
 
 ## Evaluation
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 3991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 25 \
-    --enable_dec \
-    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --focal_alpha 0.5 --focal_gamma 0.2 \
-    --ignore_non_interaction false --eval --pretrained checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter/checkpoint0060.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 3991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 25 \
-    --enable_dec \
-    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --focal_alpha 0.5 --focal_gamma 0.2 \
-    --ignore_non_interaction false --eval --pretrained checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter/checkpoint0065.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 3991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 25 \
-    --enable_dec \
-    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --focal_alpha 0.5 --focal_gamma 0.2 \
-    --ignore_non_interaction false --eval --pretrained checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter/checkpoint0070.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 3991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 25 \
-    --enable_dec \
-    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --focal_alpha 0.5 --focal_gamma 0.2 \
-    --ignore_non_interaction false --eval --pretrained checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter/checkpoint0075.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 3991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 25 \
-    --enable_dec \
-    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --focal_alpha 0.5 --focal_gamma 0.2 \
-    --ignore_non_interaction false --eval --pretrained checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter/checkpoint0080.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 3991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 25 \
-    --enable_dec \
-    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --focal_alpha 0.5 --focal_gamma 0.2 \
-    --ignore_non_interaction false --eval --pretrained checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter/checkpoint0085.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 3991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 25 \
-    --enable_dec \
-    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --focal_alpha 0.5 --focal_gamma 0.2 \
-    --ignore_non_interaction false --eval --pretrained checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter/checkpoint0090.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 3991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 25 \
-    --enable_dec \
-    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json --focal_alpha 0.5 --focal_gamma 0.2 \
-    --ignore_non_interaction false --eval --pretrained checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.2_UO_noninter/checkpoint0095.pth
