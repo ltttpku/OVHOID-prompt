@@ -176,7 +176,7 @@ def load_hico_json(
             # Ignore this annotation if we conduct zero-shot simulation experiments
             # if zero_shot_exp and (hoi_id in ZERO_SHOT_INTERACTION_IDS):
             if zero_shot_exp and hoi_id in zero_shot_interaction_ids:
-                # ignore_flag = True
+                ignore_flag = True
                 continue
 
             # Ignore non-interactions
