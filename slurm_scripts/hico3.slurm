@@ -38,7 +38,7 @@ cd /scratch/generalvision/ting/OVHOID-prompt
     --output_dir checkpoints/hico_bs2x64_lr1e-4_token10_ms5+8+11_cm5_AuxText_focal_default \
     --epochs 100 \
     --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 10 \
+    --hoi_token_length 10 \x`
     --enable_dec \
     --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
     --enable_focal_loss --zero_shot_type default --description_file_path hico_hoi_descriptions.json
