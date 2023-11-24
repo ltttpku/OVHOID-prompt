@@ -132,6 +132,7 @@ def get_args_parser():
                         help='[specific for hico], ignore <non_interaction> category')
     parser.add_argument('--zero_shot_type', default="default", type=str, choices=["default", "uc0", "uc1", "uc2", "uc3", "uc4",
                                             "rare_first", "non_rare_first", "unseen_object", "unseen_verb"],)
+    parser.add_argument('--enable_softmax', default=True, type=lambda x: (str(x).lower() == 'true'))
     # Inference
     parser.add_argument('--test_score_thresh', default=0.0001, type=float,
                         help="threshold to filter out HOI predictions")
@@ -140,7 +141,7 @@ def get_args_parser():
     parser.add_argument('--vis_dir', default='', help='path where to save visualization results')
     parser.add_argument('--bbox_lambda', default=2.0, type=float)
     parser.add_argument('--aux_text_weight', default=1.0, type=float)
-    parser.add_argument('--enable_softmax', action='store_true')
+    
     parser.add_argument('--best_beta', default=1.0, type=float)
     # Training setup
     parser.add_argument('--eval', action='store_true')

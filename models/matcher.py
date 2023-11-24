@@ -30,6 +30,7 @@ class HungarianMatcher(nn.Module):
         hoi_type: str = 'min',
         cost_hoi_type: float = 1,
         consider_all: bool = False,
+        enable_softmax: bool = False,
     ):
         """Creates the matcher
 
@@ -47,6 +48,7 @@ class HungarianMatcher(nn.Module):
         self.hoi_type = hoi_type
         self.cost_hoi_type = cost_hoi_type
         self.consider_all = consider_all
+        self.enable_softmax = enable_softmax
 
     @torch.no_grad()
     def forward(self, outputs, targets):
@@ -73,7 +75,10 @@ class HungarianMatcher(nn.Module):
         bs, num_queries = outputs["logits_per_hoi"].shape[:2]
 
         # We flatten to compute the cost matrices in a batch
-        out_prob = outputs["logits_per_hoi"].flatten(0, 1).softmax(-1)  # [batch_size * num_queries, num_classes]
+        if self.enable_softmax:
+            out_prob = outputs["logits_per_hoi"].flatten(0, 1).softmax(-1)  # [batch_size * num_queries, num_classes]
+        else:
+            out_prob = outputs["logits_per_hoi"].flatten(0, 1).sigmoid()
         out_bbox = outputs["pred_boxes"].flatten(0, 1)  # [batch_size * num_queries, 8]
         out_conf = outputs["box_scores"].flatten(0, 1).sigmoid() # [batch_size * num_queries, 1]
 
@@ -148,4 +153,5 @@ def build_matcher(args):
         hoi_type=args.hoi_type,
         cost_hoi_type=args.set_cost_hoi_type,
         consider_all=args.consider_all,
+        enable_softmax=args.enable_softmax,
     )

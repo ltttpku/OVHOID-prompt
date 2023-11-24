@@ -699,9 +699,10 @@ class HOIDetector(nn.Module):
 
 class PostProcess(object):
     """ This module converts the model's output into the format expected by the coco api"""
-    def __init__(self, score_threshold, bbox_lambda=1):
+    def __init__(self, score_threshold, bbox_lambda=1, enable_softmax=False):
         self.score_threshold = score_threshold
         self.bbox_lambda = bbox_lambda
+        self.enable_softmax = enable_softmax
 
     def __call__(self, outputs, original_size, hoi_mapper):
         """ Perform the computation
@@ -723,7 +724,10 @@ class PostProcess(object):
         pred_object_boxes[:, 0::2] = pred_object_boxes[:, 0::2] * ori_w
         pred_object_boxes[:, 1::2] = pred_object_boxes[:, 1::2] * ori_h
 
-        hoi_scores = outputs['pred_logits'].softmax(dim=-1)
+        if self.enable_softmax:
+            hoi_scores = outputs['pred_logits'].softmax(dim=-1)
+        else:
+            hoi_scores = outputs['pred_logits'].sigmoid()
         box_scores = outputs['box_scores'].sigmoid()
         scores = hoi_scores * (box_scores ** self.bbox_lambda)
 
@@ -875,6 +879,6 @@ def build_model(args):
     criterion.to(device)
 
     # Postprocessor for inference
-    postprocessors = PostProcess(args.test_score_thresh, args.bbox_lambda)
+    postprocessors = PostProcess(args.test_score_thresh, args.bbox_lambda, args.enable_softmax)
 
     return model, criterion, postprocessors
