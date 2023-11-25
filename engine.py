@@ -186,8 +186,8 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     if args.eval_subset:
         from datasets.swig import key_idxs
         import numpy as np
-        print("all APs:", evaluator[np.asarray(key_idxs)])
-        print("mean AP:", np.mean(evaluator[np.asarray(key_idxs)]))
+        print("all APs:", evaluator.swig_ap[np.asarray(key_idxs)])
+        print("mean AP:", np.mean(evaluator.swig_ap[np.asarray(key_idxs)]))
     return stats, evaluator
 
 
