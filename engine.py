@@ -191,8 +191,8 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     evaluator.summarize()
     stats = {k: meter.global_avg for k, meter in metric_logger.meters.items()}
     real_key_idxs = [data_loader.dataset.text_mapper[x] for x in key_idxs]
-    import pdb; pdb.set_trace()
     print(evaluator.swig_ap[real_key_idxs])
+    print(evaluator.swig_ap[real_key_idxs].mean())
     return stats, evaluator
 
 
