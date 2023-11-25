@@ -68,6 +68,10 @@ class SWiGHOIDetection(CocoDetection):
     def __len__(self):
         return len(self.dataset_dicts)
 
+key_idxs = [x for x in range(10)] 
+key_idxs = list(set(key_idxs))
+print(key_idxs)
+filter_idxs = [x for x in range(5539) if x not in key_idxs]
 
 def load_swig_json(json_file, image_root, text_mapper, repeat_factor_sampling=False):
     """
@@ -134,8 +138,13 @@ def load_swig_json(json_file, image_root, text_mapper, repeat_factor_sampling=Fa
             action_id = hoi["action_id"]
             hoi["text"] = generate_text(action_id, object_id)
             continguous_id = HOI_MAPPER[(action_id, object_id)]
+            if continguous_id not in text_mapper.keys():
+                continue
             hoi["hoi_id"] = text_mapper[continguous_id]
 
+        anno_dict["hoi_annotations"] = [hoi for hoi in anno_dict["hoi_annotations"] if "hoi_id" in hoi.keys()]
+        if len(anno_dict["hoi_annotations"]) == 0:
+            continue
         targets = {
             "boxes": boxes,
             "classes": classes,
@@ -145,7 +154,7 @@ def load_swig_json(json_file, image_root, text_mapper, repeat_factor_sampling=Fa
 
         record["annotations"] = targets
         dataset_dicts.append(record)
-
+    
     if repeat_factor_sampling:
         repeat_factors = repeat_factors_from_category_frequency(dataset_dicts, repeat_thresh=0.0001)
         dataset_indices = get_dataset_indices(repeat_factors)
@@ -196,6 +205,7 @@ def prepare_dataset_text(image_set):
     text_mapper = {}
     for i, hoi in enumerate(SWIG_INTERACTIONS):
         if image_set != "train" and hoi["evaluation"] == 0: continue
+        if image_set != "train" and i not in key_idxs: continue
         action_id = hoi["action_id"]
         object_id = hoi["object_id"]
         s = generate_text(action_id, object_id)

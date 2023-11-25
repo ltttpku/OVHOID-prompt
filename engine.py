@@ -68,10 +68,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     print("Averaged stats:", metric_logger)
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
 
-key_idxs = [0] 
-key_idxs = list(set(key_idxs))
-print(key_idxs)
-filter_idxs = [x for x in range(5539) if x not in key_idxs]
 
 @torch.no_grad()
 def evaluate(model, postprocessors, criterion, data_loader, device, args):
@@ -144,9 +140,6 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
-        if args.eval_subset:
-            ## set the categories not in key_idxs to 0
-            logits_per_hoi[:, :, torch.as_tensor(filter_idxs, dtype=torch.long).to(device)] = -1e9
 
         outputs = {"logits_per_hoi": logits_per_hoi,
                    "pred_boxes": pred_boxes,
@@ -190,9 +183,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     evaluator.accumulate()
     evaluator.summarize()
     stats = {k: meter.global_avg for k, meter in metric_logger.meters.items()}
-    real_key_idxs = [data_loader.dataset.text_mapper[x] for x in key_idxs]
-    print(evaluator.swig_ap[real_key_idxs])
-    print(evaluator.swig_ap[real_key_idxs].mean())
+    import pdb; pdb.set_trace()
     return stats, evaluator
 
 
