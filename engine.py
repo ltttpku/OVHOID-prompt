@@ -70,6 +70,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 key_idxs = [random.randint(0, 5538) for i in range(50)]
 key_idxs = list(set(key_idxs))
+print(key_idxs)
 filter_idxs = [x for x in range(5539) if x not in key_idxs]
 
 @torch.no_grad()
