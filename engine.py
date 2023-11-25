@@ -68,7 +68,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     print("Averaged stats:", metric_logger)
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
 
-key_idxs = [random.randint(0, 1300) for i in range(100)] 
+key_idxs = [random.randint(0, 1300) for i in range(10)] 
 key_idxs = list(set(key_idxs))
 print(key_idxs)
 filter_idxs = [x for x in range(5539) if x not in key_idxs]
