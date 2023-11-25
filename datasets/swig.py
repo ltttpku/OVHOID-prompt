@@ -71,7 +71,6 @@ class SWiGHOIDetection(CocoDetection):
 key_idxs = [x for x in range(10)] 
 key_idxs = list(set(key_idxs))
 print(key_idxs)
-filter_idxs = [x for x in range(5539) if x not in key_idxs]
 
 def load_swig_json(json_file, image_root, text_mapper, repeat_factor_sampling=False):
     """

@@ -183,7 +183,11 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     evaluator.accumulate()
     evaluator.summarize()
     stats = {k: meter.global_avg for k, meter in metric_logger.meters.items()}
-    import pdb; pdb.set_trace()
+    if args.eval_subset:
+        from datasets.swig import key_idxs
+        import numpy as np
+        print("all APs:", evaluator[np.asarray(key_idxs)])
+        print("mean AP:", np.mean(evaluator[np.asarray(key_idxs)]))
     return stats, evaluator
 
 
