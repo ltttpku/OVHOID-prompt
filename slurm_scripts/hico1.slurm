@@ -33,37 +33,15 @@ cd /scratch/generalvision/ting/OVHOID-prompt
 
 
 ## Training
-# /home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 3991 --use_env main.py \
-#     --batch_size 64 \
-#     --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.5_UO_nosoftmax \
-#     --epochs 100 \
-#     --lr 1e-4 --min-lr 1e-7 \
-#     --hoi_token_length 25 \
-#     --enable_dec \
-#     --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-#     --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json \
-#     --focal_alpha 0.5 --focal_gamma 0.5 --enable_softmax false
+/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=2 --master_port 3991 --use_env main.py \
+    --batch_size 64 \
+    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.5_UO_considerall \
+    --epochs 100 \
+    --lr 1e-4 --min-lr 1e-7 \
+    --hoi_token_length 25 \
+    --enable_dec \
+    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
+    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json \
+    --focal_alpha 0.5 --focal_gamma 0.5 --consider_all true
 
 ## Evaluation
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 3991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.5_UO_nosoftmax \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 25 \
-    --enable_dec \
-    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json \
-    --focal_alpha 0.5 --focal_gamma 0.5 --enable_softmax false --eval --pretrained checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.5_UO_nosoftmax/checkpoint0070.pth
-
-/home/leiting/scratch/.conda/envs/thid/bin/python -m torch.distributed.launch --nproc_per_node=1 --master_port 3991 --use_env main.py \
-    --batch_size 64 \
-    --output_dir checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.5_UO_nosoftmax \
-    --epochs 100 \
-    --lr 1e-4 --min-lr 1e-7 \
-    --hoi_token_length 25 \
-    --enable_dec \
-    --dataset_file hico --multi_scale true --f_idxs 5 8 11 --set_cost_hoi_type 5 --use_aux_text true \
-    --enable_focal_loss --zero_shot_type unseen_object --description_file_path hico_hoi_descriptions.json \
-    --focal_alpha 0.5 --focal_gamma 0.5 --enable_softmax false --eval --pretrained checkpoints/hico_bs2x64_lr1e-4_token25_ms5+8+11_cm5_AuxText_focal_alpha0.5_gamma0.5_UO_nosoftmax/checkpoint0080.pth
