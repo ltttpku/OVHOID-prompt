@@ -19,11 +19,11 @@ SWIG_TEST_ANNO = "./data/swig_hoi/annotations/swig_test_1000.json"
 
 
 class SWiGHOIDetection(CocoDetection):
-    def __init__(self, img_folder, ann_file, transforms, image_set, repeat_factor_sampling):
+    def __init__(self, img_folder, ann_file, transforms, image_set, repeat_factor_sampling, eval_subset):
         self.root = img_folder
         self.transforms = transforms
         # Text description of human-object interactions
-        dataset_texts, text_mapper = prepare_dataset_text(image_set)
+        dataset_texts, text_mapper = prepare_dataset_text(image_set, eval_subset=eval_subset)
         self.dataset_texts = dataset_texts
         self.text_mapper = text_mapper
         # Load dataset
@@ -200,12 +200,12 @@ def generate_text(action_id, object_id):
 '''
 
 
-def prepare_dataset_text(image_set):
+def prepare_dataset_text(image_set, eval_subset=False):
     texts = []
     text_mapper = {}
     for i, hoi in enumerate(SWIG_INTERACTIONS):
         if image_set != "train" and hoi["evaluation"] == 0: continue
-        if image_set != "train" and i not in key_idxs: continue
+        if image_set != "train" and i not in key_idxs and eval_subset: continue
         action_id = hoi["action_id"]
         object_id = hoi["object_id"]
         s = generate_text(action_id, object_id)
@@ -293,6 +293,7 @@ def build(image_set, args):
         transforms=make_transforms(image_set, args),
         image_set=image_set,
         repeat_factor_sampling=args.repeat_factor_sampling,
+        eval_subset=args.eval_subset,
     )
 
     return dataset
