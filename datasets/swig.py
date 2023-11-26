@@ -68,7 +68,7 @@ class SWiGHOIDetection(CocoDetection):
     def __len__(self):
         return len(self.dataset_dicts)
 
-key_idxs = [x for x in range(100)] 
+key_idxs = [x for x in range(50)] 
 key_idxs = list(set(key_idxs))
 print(key_idxs)
 
@@ -140,7 +140,7 @@ def load_swig_json(json_file, image_root, text_mapper, repeat_factor_sampling=Fa
             if continguous_id not in text_mapper.keys():
                 continue
             hoi["hoi_id"] = text_mapper[continguous_id]
-
+        ## for subset evaluation, remove irrelevant images and annotations
         anno_dict["hoi_annotations"] = [hoi for hoi in anno_dict["hoi_annotations"] if "hoi_id" in hoi.keys()]
         if len(anno_dict["hoi_annotations"]) == 0:
             continue
