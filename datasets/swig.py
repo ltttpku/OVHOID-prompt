@@ -68,7 +68,7 @@ class SWiGHOIDetection(CocoDetection):
     def __len__(self):
         return len(self.dataset_dicts)
 
-key_idxs = [x for x in range(50)] 
+key_idxs = [x for x in range(20)] 
 key_idxs = list(set(key_idxs))
 print(key_idxs)
 
