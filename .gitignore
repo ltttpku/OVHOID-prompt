@@ -1,1 +1,7 @@
 gpt.py
+data/swig_hoi
+data/hico_20160224_det
+checkpoints/*
+logs
+*__pycache__*
+vis_outputs/
