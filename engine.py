@@ -145,11 +145,13 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
                    "pred_boxes": pred_boxes,
                    "box_scores": box_scores,
                 #    "aux_outputs": vision_outputs["aux_outputs"],
-                   "attn_maps": vision_outputs['attn_maps'],
+                #    "attn_maps": vision_outputs['attn_maps'],
                 #    "level_id": vision_outputs["level_id"],
                    }
         if "level_id" in vision_outputs:
             outputs.update({"level_id": vision_outputs["level_id"]})
+        if "attn_maps" in vision_outputs:
+            outputs.update({"attn_maps": vision_outputs["attn_maps"]})
         
         loss_dict, indices = criterion(outputs, targets)
         weight_dict = criterion.weight_dict

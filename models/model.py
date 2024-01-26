@@ -17,7 +17,7 @@ from .matcher import build_matcher
 from .criterion import SetCriterion
 from torchvision.ops import batched_nms
 from .transformer import TransformerDecoderLayer, TransformerDecoder
-from .origin_clip import VisionTransformer
+from .origin_clip import VisionTransformer, ModifiedResNet
 
 _MODELS = {
     "RN50": "https://openaipublic.azureedge.net/clip/models/afeb0e10f9e5a86da6080e35cf09123aca3b358a0c3e3b6c78a7b63bc04b6762/RN50.pt",
@@ -128,6 +128,7 @@ class HOIVisionTransformer(nn.Module):
         semantic_units_file: str = "",
         # hyper parameters
         hoi_dropout_weight: float = 0.5,
+        vit: bool = True,
     ):
         super().__init__()
         self.image_resolution = image_resolution
@@ -155,7 +156,13 @@ class HOIVisionTransformer(nn.Module):
         self.enable_dec = enable_dec
         if enable_dec:
             # self.image_patch_pos = PositionEmbeddingSine(width // 2, normalize=True)
-            self.image_patch_pos = nn.Parameter(scale * torch.randn((self.image_resolution // self.patch_size) ** 2, width))
+            if vit:
+                self.image_patch_pos = nn.Parameter(scale * torch.randn((self.image_resolution // self.patch_size) ** 2, width))
+            else:
+                ## sizes: [784, 512], [196, 1024], [49, 2048]
+                self.image_patch_pos_1 = nn.Parameter(scale * torch.randn(784, width))
+                self.image_patch_pos_2 = nn.Parameter(scale * torch.randn(196, width))
+                self.image_patch_pos_3 = nn.Parameter(scale * torch.randn(49, width))
             self.hoi_parser_attn_mask = hoi_parser_attn_mask
             decoder_layer = TransformerDecoderLayer(width, dec_heads, normalize_before=True)
             decoder_norm = LayerNorm(width)
@@ -192,8 +199,20 @@ class HOIVisionTransformer(nn.Module):
             ("fc2", nn.Linear(width*2, width))
         ]))
         self.hoi_ln = LayerNorm(width)
+
+        self.vit = vit
         self.initialize_parameters()
 
+    def get_patch_pos(self, patch_dim):
+        if patch_dim == 784:
+            return self.image_patch_pos_1
+        elif patch_dim == 196:
+            return self.image_patch_pos_2
+        elif patch_dim == 49:
+            return self.image_patch_pos_3
+        else:
+            raise NotImplementedError
+    
     def initialize_parameters(self):
         nn.init.xavier_uniform_(self.bbox_score.weight, gain=1)
         nn.init.constant_(self.bbox_score.bias, 0)
@@ -309,9 +328,11 @@ class HOIVisionTransformer(nn.Module):
         if self.enable_dec:
             # patch_pos = self.image_patch_pos(mask) # sin/cos pos embedding for bbox decoding
             # patch_pos = patch_pos.flatten(-2).permute(2, 0, 1).type_as(image)
-            patch_pos = self.image_patch_pos.unsqueeze(0) + torch.zeros(bs, num_of_grids, c).type_as(image)
+            if self.vit:
+                patch_pos = self.image_patch_pos.unsqueeze(0) + torch.zeros(bs, num_of_grids, c).type_as(image)
+            else:
+                patch_pos = self.get_patch_pos(num_of_grids) + torch.zeros(bs, num_of_grids, c).type_as(image)
             patch_pos = patch_pos.permute(1, 0, 2).type_as(image)
-            
             hoi = hoi.permute(1, 0, 2) # NLD -> LND
             image = image.permute(1, 0, 2) # NLD -> LND
 
@@ -345,6 +366,8 @@ class HOIVisionTransformer(nn.Module):
                            "pred_boxes": pred_boxes,
                            "box_scores": box_scores,
                            "attn_maps": attn_map}
+        if not self.vit:
+            del return_dict["attn_maps"]
         return return_dict
 
 
@@ -395,10 +418,22 @@ class HOIDetector(nn.Module):
         self.prompt_hint_length = 0
 
         # Vision
-        vision_heads = vision_width // 64
         self.clip_preprocess= clip_preprocess
         self.embed_dim = embed_dim
-        self.visual = VisionTransformer(
+        if isinstance(vision_layers, (tuple, list)):
+            vit = False
+            vision_heads = vision_width * 32 // 64
+            self.visual = ModifiedResNet(
+                layers=vision_layers, # (3, 4, 23, 3)
+                output_dim=embed_dim, # 512
+                heads=vision_heads, # 32
+                input_resolution=image_resolution, # 224
+                width=vision_width # 64
+            )
+        else:
+            vit = True
+            vision_heads = vision_width // 64
+            self.visual = VisionTransformer(
                 input_resolution=image_resolution,
                 patch_size=vision_patch_size,
                 width=vision_width,
@@ -437,6 +472,7 @@ class HOIDetector(nn.Module):
             semantic_query=semantic_query,
             semantic_units_file=semantic_units_file,
             hoi_dropout_weight=hoi_dropout_weight,
+            vit=vit,
         )
 
         # Text
@@ -565,7 +601,7 @@ class HOIDetector(nn.Module):
             if remain_length < 0:
                 description_token = description_token[:len(description_token)+remain_length]
                 remain_length = 0
-                print(f"[WARNING] Input text is too long for context length {self.context_length}")
+                print(f"[WARNING] Input text {description_token} is too long for context length {self.context_length}")
                 raise RuntimeError(f"Input text is too long for context length {self.context_length}")
             eot_indices.append(self.context_length - remain_length - 1)
             padding_zeros = torch.zeros(remain_length, dtype=torch.long).to(description_token.device)
@@ -637,7 +673,7 @@ class HOIDetector(nn.Module):
             resized_img = torchvision.transforms.Resize([self.input_resolution,self.input_resolution])(image)
             raise NotImplementedError("undefined decoder_mask")
         # vision encoder
-        feature_maps = self.encode_image(resized_img, self.multi_scale, self.f_idxs)
+        feature_maps = self.encode_image(resized_img, self.multi_scale, self.f_idxs) # [torch.Size([8, 196, 768]), ]
         # vision decoder
         if self.multi_scale:
             vision_output_lst = []
@@ -686,14 +722,15 @@ class HOIDetector(nn.Module):
             "logits_per_hoi": logits_per_hoi,
             "pred_boxes": vision_outputs["pred_boxes"],
             "box_scores": vision_outputs["box_scores"],
-            "attn_maps": vision_outputs["attn_maps"],
+            # "attn_maps": vision_outputs["attn_maps"],
             # "level_id": vision_outputs["level_id"],
         }
         if "level_id" in vision_outputs:
             return_dict.update({"level_id": vision_outputs["level_id"]})
         if "aux_outputs" in vision_outputs:
             return_dict.update({"aux_outputs": vision_outputs["aux_outputs"]})
-
+        if "attn_maps" in vision_outputs:
+            return_dict.update({"attn_maps": vision_outputs["attn_maps"]})
         return return_dict
 
 
@@ -794,12 +831,16 @@ def convert_weights(model: nn.Module):
 
 def build_model(args):
     ''' Build HOI detector and load pretrained CLIP weights '''
+    if 'vit' not in args.clip_model.lower():
+        vision_layers = (3, 4, 23, 3)
+    else:
+        vision_layers = args.vision_layers
     # Build HOI detector
     model = HOIDetector(
         embed_dim=args.embed_dim,
         # vision encoder
         image_resolution=args.image_resolution, # CLIP uses fixed image resolution
-        vision_layers=args.vision_layers,
+        vision_layers=vision_layers,
         vision_width=args.vision_width,
         vision_patch_size=args.vision_patch_size,
         hoi_token_length=args.hoi_token_length,
