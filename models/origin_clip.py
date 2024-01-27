@@ -153,13 +153,13 @@ class ModifiedResNet(nn.Module):
         
         x = self.layer1(x)
         x = self.layer2(x)
-        if multi_scale:
+        if multi_scale and 5 in f_idxs:
             ret_x.append(self.new_proj1(x.view(x.shape[0], x.shape[1], -1).permute(0, 2, 1)))
         x = self.layer3(x)
-        if multi_scale:
+        if multi_scale and 8 in f_idxs:
             ret_x.append(self.new_proj2(x.view(x.shape[0], x.shape[1], -1).permute(0, 2, 1)))
         x = self.layer4(x)
-        if multi_scale:
+        if multi_scale and 11 in f_idxs:
             ret_x.append(self.new_proj3(x.view(x.shape[0], x.shape[1], -1).permute(0, 2, 1)))
             return ret_x
         x = self.attnpool(x)

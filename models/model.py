@@ -601,8 +601,8 @@ class HOIDetector(nn.Module):
             if remain_length < 0:
                 description_token = description_token[:len(description_token)+remain_length]
                 remain_length = 0
-                print(f"[WARNING] Input text {description_token} is too long for context length {self.context_length}")
-                raise RuntimeError(f"Input text is too long for context length {self.context_length}")
+                # print(f"[WARNING] Input text is too long for context length {self.context_length}")
+                # raise RuntimeError(f"Input text is too long for context length {self.context_length}")
             eot_indices.append(self.context_length - remain_length - 1)
             padding_zeros = torch.zeros(remain_length, dtype=torch.long).to(description_token.device)
             token = torch.cat([description_token, padding_zeros])
