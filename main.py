@@ -58,7 +58,7 @@ def main(args):
                 p.requires_grad = False
                 continue
             
-            if 'hoi' in n or 'bbox' in n or 'promp_proj' in n or "vision_proj" in n or 'gate_weight' in n:
+            if 'hoi' in n or 'bbox' in n or 'promp_proj' in n or "vision_proj" in n or 'gate_weight' in n or 'new_proj' in n:
                 update_modules.append(n)
                 update_params.append(p)
             else:
