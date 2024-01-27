@@ -122,6 +122,10 @@ def main(args):
         test_stats, evaluator = evaluate(model, postprocessors, criterion, data_loader_val, device, args)
         if args.output_dir:
             evaluator.save(args.output_dir)
+        # import pdb; pdb.set_trace()
+        # import pickle
+        # with open('our_pred.pickle', 'wb') as handle:
+        #     pickle.dump(evaluator.swig_ap, handle)
         return
 
     print("Start training")
