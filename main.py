@@ -116,7 +116,7 @@ def main(args):
     # evaluation
     if args.eval:
         # print FLOPs
-        # get_flop_stats(model, data_loader_val)
+        get_flop_stats(model, data_loader_val)
         if args.distributed:
             model = model.module
         test_stats, evaluator = evaluate(model, postprocessors, criterion, data_loader_val, device, args)

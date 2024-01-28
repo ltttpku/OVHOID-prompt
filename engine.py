@@ -355,6 +355,11 @@ def get_flop_stats(model, data_loader):
         float: the total number of gflops of the given model.
     """
     inputs = _get_model_analysis_input(data_loader)
+    from thop import profile, clever_format
+    macs, params = profile(model, inputs)
+    macs, params = clever_format([macs, params], "%.3f")
+    print("Total MACs(G)", macs, "Total params(M)", params) # Total MACs(G) 277.591G Total params(M) 96.238M , GFLOPs = 2 * GMACs
+    import pdb; pdb.set_trace()
     flops = FlopCountAnalysis(model, inputs)
     print("Total FLOPs(G)", flops.total() / 1e9)
     print(flop_count_table(flops, max_depth=4, show_param_shapes=False))
@@ -362,9 +367,11 @@ def get_flop_stats(model, data_loader):
 
 
 def _get_model_analysis_input(data_loader):
+    hoi_descriptions = get_hoi_descriptions(dataset_name='swig', description_file_path='swig_hoi_descriptions_6bodyparts.json')
     for images, targets in data_loader:
-        images, targets, texts = prepare_inputs(images, targets, "cuda")
-        inputs = (images.tensors, texts, images.mask)
+        images, targets, texts, auxiliary_texts  = prepare_inputs(images, targets, data_loader, "cuda", hoi_descriptions)
+        img_sizes = torch.stack([targets[z]['size'] for z in range(len(targets))], dim=0)
+        inputs = (images.tensors, texts, images.mask, img_sizes, auxiliary_texts)
         return inputs
 
 
