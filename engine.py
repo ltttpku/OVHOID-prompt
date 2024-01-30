@@ -86,7 +86,7 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
     hoi_descriptions = get_hoi_descriptions(dataset_name=args.dataset_file, description_file_path=args.description_file_path)
     # Convert all interaction categories into embeddings, only forward pass once!!
     text_tokens, auxiliary_texts = prepare_text_inputs(model, data_loader.dataset.dataset_texts, device, hoi_descriptions)
-    text_features = model.encode_text(text_tokens, pure_words=False)
+    text_features = model.encode_text(text_tokens, pure_words=(args.use_context == False))
     text_features /= text_features.norm(dim=-1, keepdim=True)
     if args.use_aux_text:
         auxiliary_text_features = model.encode_text(auxiliary_texts, is_auxiliary_text=True)
@@ -98,7 +98,8 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         prompt_hint = torch.zeros(0, args.vision_width).half().to(device)
     
     # Inference
-    for images, targets in metric_logger.log_every(data_loader, 10, header):
+    # for images, targets in metric_logger.log_every(data_loader, 10, header):
+    for images, targets in data_loader:
         images = images.to(device)
         targets = [{k: v.to(device) if k != "hois" else v for k, v in t.items()} for t in targets]
         
@@ -141,6 +142,8 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         pred_boxes = vision_outputs["pred_boxes"]
         box_scores = vision_outputs["box_scores"]
 
+        start_idx, end_idx = int(logits_per_hoi.shape[1] * 0.7), int(logits_per_hoi.shape[1] * 0.9 + 2)
+        logits_per_hoi, pred_boxes, box_scores = logits_per_hoi[:, start_idx:end_idx, :], pred_boxes[:, start_idx:end_idx, :], box_scores[:, start_idx:end_idx, :]
         outputs = {"logits_per_hoi": logits_per_hoi,
                    "pred_boxes": pred_boxes,
                    "box_scores": box_scores,
@@ -153,20 +156,20 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         if "attn_maps" in vision_outputs:
             outputs.update({"attn_maps": vision_outputs["attn_maps"]})
         
-        loss_dict, indices = criterion(outputs, targets)
-        weight_dict = criterion.weight_dict
+        # loss_dict, indices = criterion(outputs, targets)
+        # weight_dict = criterion.weight_dict
 
-        if args.vis_outputs:
-            visualizer = Visualizer(args)
-            visualizer.visualize_preds(images, targets, outputs)
-            # visualizer.visualize_attention(images, targets, outputs)
+        # if args.vis_outputs:
+        #     visualizer = Visualizer(args)
+        #     visualizer.visualize_preds(images, targets, outputs)
+        #     # visualizer.visualize_attention(images, targets, outputs)
 
-        # reduce losses over all GPUs for logging purposes
-        loss_dict_reduced = utils.reduce_dict(loss_dict)
-        loss_dict_reduced_scaled = {k: v * weight_dict[k] for k, v in loss_dict_reduced.items() if k in weight_dict}
-        loss_dict_reduced_unscaled = {f'{k}_unscaled': v for k, v in loss_dict_reduced.items()}
-        metric_logger.update(loss=sum(loss_dict_reduced_scaled.values()), **loss_dict_reduced_scaled, **loss_dict_reduced_unscaled)
-        metric_logger.update(class_error=loss_dict_reduced['class_error'])
+        # # reduce losses over all GPUs for logging purposes
+        # loss_dict_reduced = utils.reduce_dict(loss_dict)
+        # loss_dict_reduced_scaled = {k: v * weight_dict[k] for k, v in loss_dict_reduced.items() if k in weight_dict}
+        # loss_dict_reduced_unscaled = {f'{k}_unscaled': v for k, v in loss_dict_reduced.items()}
+        # metric_logger.update(loss=sum(loss_dict_reduced_scaled.values()), **loss_dict_reduced_scaled, **loss_dict_reduced_unscaled)
+        # metric_logger.update(class_error=loss_dict_reduced['class_error'])
         
         results = {int(targets[i]['image_id']): postprocessors(
             {'pred_logits': logits_per_hoi[i], 'pred_boxes': pred_boxes[i], 'box_scores': box_scores[i]},
@@ -177,14 +180,21 @@ def evaluate(model, postprocessors, criterion, data_loader, device, args):
         evaluator.update(results)
 
     # gather the stats from all processes
-    metric_logger.synchronize_between_processes()
-    print("Averaged stats:", metric_logger)
+    # metric_logger.synchronize_between_processes()
+    # print("Averaged stats:", metric_logger)
 
     evaluator.save_preds()
     # accumulate predictions from all images
     evaluator.accumulate()
     evaluator.summarize()
-    stats = {k: meter.global_avg for k, meter in metric_logger.meters.items()}
+    print(f'reverse_pred_{start_idx}_{end_idx}.pickle')
+    import pdb; pdb.set_trace()
+    import pickle
+    with open(f'reverse_pred_{start_idx}_{end_idx}.pickle', 'wb') as handle:
+        pickle.dump(evaluator.swig_ap, handle)
+    
+    # stats = {k: meter.global_avg for k, meter in metric_logger.meters.items()}
+    stats = 1
     if args.eval_subset:
         from datasets.swig import key_idxs
         import numpy as np
@@ -358,7 +368,7 @@ def get_flop_stats(model, data_loader):
     from thop import profile, clever_format
     macs, params = profile(model, inputs)
     macs, params = clever_format([macs, params], "%.3f")
-    print("Total MACs(G)", macs, "Total params(M)", params) # Total MACs(G) 277.591G Total params(M) 96.238M , GFLOPs = 2 * GMACs
+    print("Total MACs(G)", macs, "Total params(M)", params) # Total MACs(G) 21.495G, GFLOPs = 2 * GMACs
     import pdb; pdb.set_trace()
     flops = FlopCountAnalysis(model, inputs)
     print("Total FLOPs(G)", flops.total() / 1e9)

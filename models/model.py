@@ -403,6 +403,7 @@ class HOIDetector(nn.Module):
         transformer_layers: int,
         prefix_length: int = 8,
         conjun_length: int = 4,
+        use_context: bool = True,
         ## use_aux_text
         use_aux_text: bool = False,
         auxiliary_prefix_length: int = 4,
@@ -493,6 +494,7 @@ class HOIDetector(nn.Module):
 
         self.prefix_length = prefix_length
         self.conjun_length = conjun_length
+        self.use_context = use_context
         self.use_aux_text = use_aux_text
         self.auxiliary_prefix_length = auxiliary_prefix_length
         self.hoi_prefix = nn.Parameter(torch.empty(prefix_length, transformer_width))
@@ -694,7 +696,7 @@ class HOIDetector(nn.Module):
             vision_outputs = self.hoi_visual_decoder(image=feature_maps, mask=decoder_mask, prompt_hint=prompt_hint)
         # import pdb; pdb.set_trace()
         # text encoder
-        text_features = self.encode_text(text)
+        text_features = self.encode_text(text, pure_words=(self.use_context == False))
         if self.use_aux_text:
             auxiliary_text_features = self.encode_text(auxiliary_texts, is_auxiliary_text=True)
             auxiliary_text_features = auxiliary_text_features / auxiliary_text_features.norm(dim=-1, keepdim=True)
@@ -866,6 +868,7 @@ def build_model(args):
         transformer_layers=args.transformer_layers,
         prefix_length=args.prefix_length,
         conjun_length=args.conjun_length,
+        use_context=args.use_context,
         ## aux_text
         use_aux_text=args.use_aux_text,
         auxiliary_prefix_length=args.auxiliary_prefix_length,

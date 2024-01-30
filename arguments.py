@@ -61,6 +61,7 @@ def get_args_parser():
                         help="number of multi-attention heads in text transformer")
     parser.add_argument('--transformer_layers', default=12, type=int,
                         help="number of layers in text transformer")
+    parser.add_argument('--use_context', default=True, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--prefix_length', default=8, type=int,
                         help="number of [PREFIX] tokens at the beginning of sentences")
     parser.add_argument('--conjun_length', default=2, type=int,

@@ -78,6 +78,13 @@ def main(args):
     n_parameters = sum(p.numel() for p in model_without_ddp.parameters())
     print('number of total params:', n_parameters, f'{n_parameters/1e6:.3f}M')
 
+    # trainable params about 'decoder'
+    n_parameters = sum(p.numel() for n, p in model_without_ddp.named_parameters() if 'hoi_visual_decoder' in n and p.requires_grad)
+    print('number of trainable params in decoder:', n_parameters, f'{n_parameters/1e6:.3f}M')
+    # trainable params about 'visual'
+    n_parameters = sum(p.numel() for n, p in model_without_ddp.named_parameters() if 'visual.' in n and p.requires_grad)
+    print('number of trainable params in visual:', n_parameters, f'{n_parameters/1e6:.3f}M')
+
     dataset_train = build_dataset(image_set='train', args=args)
     dataset_val = build_dataset(image_set='val', args=args)
     print('# train:', len(dataset_train), ', # val', len(dataset_val))
@@ -116,7 +123,7 @@ def main(args):
     # evaluation
     if args.eval:
         # print FLOPs
-        # get_flop_stats(model, data_loader_val)
+        get_flop_stats(model, data_loader_val)
         if args.distributed:
             model = model.module
         test_stats, evaluator = evaluate(model, postprocessors, criterion, data_loader_val, device, args)
